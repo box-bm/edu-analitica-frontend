@@ -13,7 +13,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #0f2041; 
+  background-color: #f7f5f3;; 
 }
 
 /* Tarjeta blanca exterior */
@@ -27,7 +27,7 @@ body {
 
 /* Borde interno gris claro */
 .login-inner-border {
-  border: 1px solid #e2e8f0;
+  border: 1px solid #2d6bbb;
   border-radius: 12px;
   padding: 2.5rem 2rem;
 }
@@ -64,16 +64,22 @@ body {
 .input-group label, .role-group label {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #334155;
+  color: #000000;
 }
 
 .input-group input {
   padding: 0.8rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  border: 1px solid #2563eb;
+  border-radius: 10px;
   font-size: 0.9rem;
-  color: #334155;
+  color: #1e293b;
+  background-color: white;
   outline: none;
+}
+
+.input-group input:focus {
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 .input-group input::placeholder {
@@ -125,4 +131,22 @@ body {
 
 .submit-btn:hover {
   background-color: #1d4ed8;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-error {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.login-logo {
+  width: 200px;
+  height: 200;
+  object-fit: contain;
+  margin-bottom: 0rem;
 }

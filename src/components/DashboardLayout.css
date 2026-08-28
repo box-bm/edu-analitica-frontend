@@ -1,0 +1,149 @@
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #faf6ee;   /* crema clarito */
+  font-family: system-ui, -apple-system, sans-serif;
+}
+/* --- Sidebar --- */
+.sidebar {
+  width: 64px;
+  background-color: #1e3a5f;
+  color: #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.2s ease;
+  flex-shrink: 0;
+}
+
+.sidebar.sidebar-open {
+  width: 220px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  white-space: nowrap;
+}
+
+.sidebar-toggle {
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 1.2rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  font-weight: 700;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar-open .sidebar-brand {
+  opacity: 1;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0.5rem;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.sidebar-item,
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sidebar-item:hover,
+.sidebar-logout:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.sidebar-item.active {
+  background-color: #2563eb;
+  color: white;
+}
+
+.sidebar-icon {
+  flex-shrink: 0;
+  width: 1.2rem;
+  text-align: center;
+}
+
+.sidebar-label {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.sidebar-open .sidebar-label {
+  opacity: 1;
+}
+
+.sidebar-logout {
+  margin: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  padding-top: 1rem;
+}
+
+/* --- Contenido principal --- */
+.dashboard-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dashboard-title {
+  font-size: 1.4rem;
+  color: #1e293b;
+  margin: 0;
+}
+
+.dashboard-role {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.dashboard-role strong {
+  color: #1e3a8a;
+}
+
+.dashboard-body {
+  padding: 2rem;
+}
+
+.sidebar-logo {
+  width: 145px;
+  height: 50px;
+  margin-bottom: 0rem;
+  flex-shrink: 0;
+}
