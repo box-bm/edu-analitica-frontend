@@ -71,7 +71,7 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename={import.meta.env.BASE_URL}>
         <AppRoutes />
       </Router>
     </AuthProvider>

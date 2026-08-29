@@ -4,6 +4,7 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/edu-analitica-frontend/',
   plugins: [
     react(),
     babel({ presets: [reactCompilerPreset()] })
