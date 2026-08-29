@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo2.png';
 import './DashboardLayout.css';
+import '../components/dashboard/widgets.css';
 
-export default function DashboardLayout({ menuItems, children }) {
+export default function DashboardLayout({ menuItems }) {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [seleccionado, setSeleccionado] = useState(menuItems[0]?.label ?? '');
+  const itemActivo = menuItems.find((item) => item.label === seleccionado);
 
   return (
     <div className="dashboard-layout">
@@ -55,7 +57,7 @@ export default function DashboardLayout({ menuItems, children }) {
         </header>
 
         <section className="dashboard-body">
-          {children ?? <p>Contenido de "{seleccionado}" próximamente.</p>}
+          {itemActivo?.content ?? <p>Contenido de "{seleccionado}" próximamente.</p>}
         </section>
       </main>
     </div>
