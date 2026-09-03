@@ -92,6 +92,7 @@ POST /api/auth/logout   → 204
 GET/POST/PUT/DELETE /api/usuarios
 GET/POST/PUT         /api/modulos
 GET/POST             /api/grados
+GET/POST/PUT/DELETE  /api/secciones?id_grado=   planned — see "Secciones" below, not implemented yet
 GET                  /api/admin/resumen
 
 GET/POST/PUT  /api/actividades
@@ -100,10 +101,39 @@ GET           /api/docentes/me/resultados?grado=&modulo=
 GET           /api/reportes?grado=&modulo=
 GET           /api/reportes/:id/export
 GET           /api/reportes/:id/pdf
+GET           /api/usuarios/me   planned — see "Real integration" below, not implemented yet
 ```
+
+### Secciones (planned, not implemented)
+
+Módulo 2 (ampliado) adds a `secciones` concept alongside `grados`, so the school can organize students into real groups (e.g. "1ro A", "1ro B") instead of just a grade level. `secciones` relates 1-to-many to `grados` (`id_grado` FK, unique on `id_grado + nombre_seccion`, soft-deleted via `activa`). Once the student/group model is defined (still blocked on Josue), it will hang off `secciones`, not `grados` directly.
+
+On the frontend this means a new Admin-only page, `Secciones` (a table + create/edit modal with a Grado select), added as a tab in the admin dashboard next to Usuarios/Módulos/Grados — following the same `src/pages/admin/*` + `menuItems` pattern described above, backed by `GET/POST/PUT/DELETE /api/secciones?id_grado=`. None of this exists in the codebase yet.
+
+### Real integration: auth against the live backend (planned, not implemented)
+
+The first real (non-mock) integration point is the Módulo 1 auth flow — login, refresh, logout, protected routes, and `usuarios/me` — connecting `userService`/`apiClient` to Antony's deployed backend instead of `MOCK_USERS`. This is scoped narrower than the full "Real auth model" described above: it's specifically about making that model work once frontend and backend are deployed on **different domains** (frontend on GitHub Pages/Vercel/Netlify, backend on Railway), which the original Módulo 1 design didn't account for. Concretely, when this gets built:
+
+- `apiClient`'s `API_BASE_URL` needs to come from an env var (e.g. `VITE_API_URL`) pointing at the deployed backend, not hardcoded to `http://localhost:3001`.
+- Every request that relies on the refresh cookie needs `withCredentials: true` on the axios client (or `credentials: 'include'` for `fetch`) — without it, the httpOnly refresh cookie never gets sent or set cross-domain.
+- The backend's refresh cookie needs `sameSite=none; secure=true` and its CORS `FRONTEND_URL` must be the exact deployed frontend origin (not `*`) for the cookie to survive a cross-domain request at all.
+- **If session doesn't persist across a page reload after login, suspect this cross-domain cookie config first** (`withCredentials`/`credentials`, `sameSite`, or backend CORS) before assuming it's a frontend bug — coordinate with Antony rather than debugging it solo.
+- Flow to validate once wired up: login → reload the page (session recovers via `/api/auth/refresh`) → logout (a subsequent refresh should actually fail, i.e. the session was revoked server-side, not just cleared from local state).
+- Landing pages should show the real `nombre_completo` from `GET /api/usuarios/me` instead of relying only on what's baked into the JWT.
+
+This round of integration is scoped to auth + Secciones only — the rest of the Módulo 2 backend surface (`actividades`, `reportes`) stays mocked for now, and the student/group model stays fully blocked on Josue's decision.
+
+### Planned testing setup (not started)
+
+No test tooling exists in this repo yet (see "Commands" above). When QA setup lands, the plan is:
+
+- Install Cypress in this repo; `cypress.config.ts` with a configurable `baseUrl` (local vs. the real deploy) — note this implies a `.ts` config file even though the rest of the app is `.jsx`, since Cypress config is commonly TypeScript regardless of app language.
+- First real spec: `cypress/e2e/auth.cy.ts` covering login → role landing → logout against the real integrated backend.
+- A fixed test user (e.g. `admin.test`) seeded in the backend's dedicated testing DB branch, so tests don't depend on real school data.
+- Document how to run tests in `TESTING.md` (or a section here) so the whole team can run them, not just QA.
 
 ### Open decisions (per project planning, unresolved as of last sync)
 
-- Student access model (individual login vs. group/shared access) — blocked on Josue; affects the estudiante login/identification flow and the data shape for a `Resultado` result screen.
+- Student access model (individual login vs. group/shared access) — blocked on Josue; affects the estudiante login/identification flow and the data shape for a `Resultado` result screen, and downstream affects how `secciones` eventually links to students.
 - Whether docente accounts (created by admin with a temporary password) require a forced password change on first login.
 - Final copy/tone for the student-facing result screen — needs to fit the "no failure-sounding messaging" constraint above.
