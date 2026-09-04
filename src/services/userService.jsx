@@ -56,7 +56,7 @@ class UserService {
     try {
       const response = await apiClient.post('/api/auth/login', {
         usuario: credentials.usuario,
-        contraseña: credentials.contraseña,
+        password: credentials.contraseña,
       });
 
       return {
@@ -66,7 +66,7 @@ class UserService {
     } catch (err) {
       return {
         success: false,
-        error: err.response?.data?.error || 'Credenciales inválidas',
+        error: err.response?.data?.message || 'Credenciales inválidas',
       };
     }
   }
@@ -81,7 +81,7 @@ class UserService {
     } catch (err) {
       return {
         success: false,
-        error: err.response?.data?.error || 'Sesión expirada',
+        error: err.response?.data?.message || 'Sesión expirada',
       };
     }
   }
@@ -93,7 +93,7 @@ class UserService {
     } catch (err) {
       return {
         success: false,
-        error: err.response?.data?.error || 'Error al cerrar sesión',
+        error: err.response?.data?.message || 'Error al cerrar sesión',
       };
     }
   }
@@ -108,7 +108,7 @@ class UserService {
     } catch (err) {
       return {
         success: false,
-        error: err.response?.data?.error || 'No se pudo obtener el usuario',
+        error: err.response?.data?.message || 'No se pudo obtener el usuario',
       };
     }
   }

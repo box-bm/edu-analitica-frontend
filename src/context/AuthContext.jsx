@@ -154,21 +154,24 @@ export const AuthProvider = ({ children }) => {
   // Al montar la app, intenta recuperar sesión real vía refresh
   useEffect(() => {
     const restoreSession = async () => {
+      // POST /api/auth/refresh only returns a new accessToken, no user data,
+      // so fetch the current user separately once the session is confirmed.
       const result = await userService.refresh();
 
-      // TODO BACKEND: confirmar con Antony el shape real de la respuesta de
-      // POST /api/auth/refresh. Aquí asumo que devuelve { user: {...} } igual
-      // que login(). Si el refresh devuelve algo distinto (ej. solo un nuevo
-      // token sin datos de usuario), puede que aquí necesitemos llamar
-      // también a userService.me() para traer los datos del usuario.
-      if (result.success && result.data?.user) {
-        const userData = {
-          id: result.data.user.Id,
-          nombre: result.data.user.Nombre,
-          usuario: result.data.user.Usuario,
-          rol: result.data.user.Rol,
-        };
-        setUser(userData);
+      if (result.success) {
+        // GET /api/usuarios/me returns the user directly (not wrapped), with
+        // nombreCompleto and a nested rol: { id, nombreRol } — a different
+        // shape than POST /api/auth/login's flat { id, nombre, rol }.
+        const me = await userService.me();
+        if (me.success && me.data) {
+          const userData = {
+            id: me.data.id,
+            nombre: me.data.nombreCompleto,
+            usuario: me.data.usuario,
+            rol: me.data.rol.nombreRol,
+          };
+          setUser(userData);
+        }
       }
 
       setLoading(false);
@@ -182,23 +185,15 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      // TODO BACKEND: confirmar con Antony el nombre exacto de los campos
-      // que espera POST /api/auth/login. Aquí mando { usuario, contraseña }
-      // tal cual vienen del formulario — puede que el backend espere
-      // { usuario, password } o algo distinto.
       const response = await userService.login(credentials);
 
       if (response.success && response.data) {
-        // TODO BACKEND: confirmar el formato exacto de response.data.user.
-        // Aquí asumo Id, Nombre, Usuario, Rol (con mayúscula inicial, como
-        // en el mock viejo). Es muy probable que el backend real devuelva
-        // en minúscula (id, nombre, usuario, rol) u otro formato.
-        // Verificar con: console.log(response.data) antes de esta línea.
+        // POST /api/auth/login returns { accessToken, usuario: { id, nombre, rol } }
+        // (no username field here — that's only on GET /api/usuarios/me)
         const userData = {
-          id: response.data.user.Id,
-          nombre: response.data.user.Nombre,
-          usuario: response.data.user.Usuario,
-          rol: response.data.user.Rol,
+          id: response.data.usuario.id,
+          nombre: response.data.usuario.nombre,
+          rol: response.data.usuario.rol,
         };
 
         setUser(userData);
@@ -207,9 +202,6 @@ export const AuthProvider = ({ children }) => {
         throw new Error(response.error || 'Credenciales inválidas');
       }
     } catch (err) {
-      // TODO BACKEND: confirmar el formato del error que devuelve el backend
-      // (err.response?.data?.error vs err.response?.data?.message, etc.)
-      // userService.login() ya intenta leer err.response?.data?.error.
       const errorMessage = err.message || 'Error en el login';
       setError(errorMessage);
       return { success: false, error: errorMessage };

@@ -16,11 +16,11 @@ function RutaInicio() {
 
   if (isAuthenticated) {
     switch (user.rol) {
-      case 'Estudiante':
+      case 'estudiante':
         return <Navigate to="/estudiante" replace />;
-      case 'Docente':
+      case 'docente':
         return <Navigate to="/docente" replace />;
-      case 'Admin':
+      case 'administrador':
         return <Navigate to="/admin" replace />;
       default:
         return <Navigate to="/no-autorizado" replace />;
@@ -38,7 +38,7 @@ function AppRoutes() {
       <Route
         path="/estudiante"
         element={
-          <PrivateRoute allowedRoles={['Estudiante']}>
+          <PrivateRoute allowedRoles={['estudiante']}>
             <Estudiante />
           </PrivateRoute>
         }
@@ -47,7 +47,7 @@ function AppRoutes() {
       <Route
         path="/docente"
         element={
-          <PrivateRoute allowedRoles={['Docente']}>
+          <PrivateRoute allowedRoles={['docente']}>
             <Docente />
           </PrivateRoute>
         }
@@ -56,7 +56,7 @@ function AppRoutes() {
       <Route
         path="/admin"
         element={
-          <PrivateRoute allowedRoles={['Admin']}>
+          <PrivateRoute allowedRoles={['administrador']}>
             <Admin />
           </PrivateRoute>
         }
