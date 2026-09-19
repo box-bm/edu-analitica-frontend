@@ -135,6 +135,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import userService from '../services/userService';
+import { setAccessToken } from '../services/apiClient';
 
 const AuthContext = createContext();
 
@@ -159,6 +160,8 @@ export const AuthProvider = ({ children }) => {
       const result = await userService.refresh();
 
       if (result.success) {
+        setAccessToken(result.data.accessToken);
+
         // GET /api/usuarios/me returns the user directly (not wrapped), with
         // nombreCompleto and a nested rol: { id, nombreRol } — a different
         // shape than POST /api/auth/login's flat { id, nombre, rol }.
@@ -188,6 +191,8 @@ export const AuthProvider = ({ children }) => {
       const response = await userService.login(credentials);
 
       if (response.success && response.data) {
+        setAccessToken(response.data.accessToken);
+
         // POST /api/auth/login returns { accessToken, usuario: { id, nombre, rol } }
         // (no username field here — that's only on GET /api/usuarios/me)
         const userData = {
@@ -215,6 +220,7 @@ export const AuthProvider = ({ children }) => {
     // la sesión ya expiró (para que el usuario siempre pueda "salir" sin
     // quedar atascado por un error de red).
     await userService.logout();
+    setAccessToken(null);
     setUser(null);
     setError(null);
   };

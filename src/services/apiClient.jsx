@@ -11,11 +11,26 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 10000, 
+  timeout: 10000,
   // TODO BACKEND: confirmar con Antony que su CORS tiene configurado
   // credentials: true en el backend también — withCredentials aquí no
   // sirve de nada si el servidor no lo permite del otro lado.
   withCredentials: true,
+});
+
+// accessToken vive solo en memoria (nunca en localStorage, por XSS) — se
+// pierde en un reload a propósito, y se recupera vía /api/auth/refresh.
+let accessToken = null;
+
+export const setAccessToken = (token) => {
+  accessToken = token;
+};
+
+apiClient.interceptors.request.use((config) => {
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return config;
 });
 
 export default apiClient;
