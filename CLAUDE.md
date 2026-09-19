@@ -34,26 +34,19 @@ React 19 + Vite SPA (`login-react` in package.json), plain JavaScript (`.jsx`, n
 
 Roles on the backend are stored lowercase (`administrador`, `docente`, `estudiante`); the frontend uses capitalized role strings (`Admin`, `Docente`, `Estudiante`) — this mapping happens on the backend response, not in this repo.
 
-### Auth: real bug found — accessToken is never attached to requests
+### Auth: real integration fixed and validated end-to-end (2026-09-19)
 
-`src/services/userService.jsx` no longer uses mocks (the old `MOCK_USERS` array is left commented out for reference, not deleted). It calls the real backend through `apiClient`: `login`, `refresh`, `logout`, `me` all hit `edu-analitica-backend` (`POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/usuarios/me`). `src/services/apiClient.jsx` is an axios instance with `baseURL` from `VITE_API_URL` and `withCredentials: true` so the httpOnly refresh cookie survives the cross-domain request to Railway.
+`src/services/userService.jsx` no longer uses mocks (the old `MOCK_USERS` array is left commented out for reference — safe to delete, nothing depends on it). It calls the real backend through `apiClient`: `login`, `refresh`, `logout`, `me` all hit `edu-analitica-backend` (`POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/usuarios/me`). `src/services/apiClient.jsx` is an axios instance with `baseURL` from `VITE_API_URL` and `withCredentials: true` so the httpOnly refresh cookie survives the cross-domain request to Railway.
 
-**Validated end-to-end against the live deploy (2026-09-18, `box-bm.github.io/edu-analitica-frontend/` ↔ Railway):**
-- ✅ **Login works** — real credentials against the real backend, redirects to the correct role dashboard.
-- ✅ **Logout works** — `POST /api/auth/logout` returns 204 and actually revokes the session server-side (confirmed a subsequent `/api/auth/refresh` with the same cookie then returns 401).
-- ❌ **Reload does NOT work** — reloading an authenticated route (e.g. `/admin`) kicks the user back to login even though the backend session is still valid.
+**Validated end-to-end against the live deploy, twice, after the fix below (2026-09-19, `box-bm.github.io/edu-analitica-frontend/` ↔ Railway):** ✅ login, ✅ reload (session now persists), ✅ logout (session actually revoked server-side — a subsequent refresh with the same cookie returns 401). The full loop works.
 
-**Root cause (confirmed via curl directly against the Railway backend, isolating frontend vs. backend):** the backend is fine — `POST /api/auth/login` and `POST /api/auth/refresh` both return `{accessToken}`, and `GET /api/usuarios/me` returns 200 when called with `Authorization: Bearer <that token>`. The bug is that **`AuthContext.jsx` never stores the `accessToken` anywhere, and `apiClient.jsx` has no request interceptor that attaches `Authorization: Bearer <accessToken>`** (`grep -rn "Authorization\|Bearer" src/` only matches comments, no actual header-setting code). So on `restoreSession()` (mount/reload), `refresh()` succeeds and gets a fresh token that's immediately discarded, then `me()` goes out with no `Authorization` header → 401 → `user` stays `null` → `PrivateRoute` redirects to `/`.
-
-**This is the active fix — do this first:**
-1. Store the `accessToken` somewhere `apiClient` can read it on every request — in-memory only, per the security requirement below (never `localStorage`). A module-level variable in `apiClient.jsx` with a setter, or the token kept in `AuthContext` state and pushed into `apiClient` via a setter function, both work; just keep it out of `localStorage`.
-2. Add a request interceptor in `apiClient.jsx` (`apiClient.interceptors.request.use(...)`) that adds `Authorization: Bearer <token>` when a token is set.
-3. Set the token after a successful `login()` and after a successful `refresh()` in `AuthContext.jsx`; clear it on `logout()`.
-4. Re-test the login → reload → logout loop against the live deploy after the fix — that's the actual acceptance check, not just that it compiles.
+**The bug that was here (now fixed, commit `b02fcbd`):** the backend was always fine — `POST /api/auth/login` and `POST /api/auth/refresh` both return `{accessToken}`, and `GET /api/usuarios/me` returns 200 given `Authorization: Bearer <that token>`. The frontend bug was that `AuthContext.jsx` never stored the `accessToken` anywhere and `apiClient.jsx` had no interceptor to attach it, so on reload `refresh()` got a valid token that was discarded, `me()` went out with no `Authorization` header, got 401, and `PrivateRoute` bounced to login. Fixed by:
+- `apiClient.jsx`: added a module-level, in-memory-only `accessToken` holder (`setAccessToken` export — never `localStorage`, per the security requirement below) plus a request interceptor that attaches `Authorization: Bearer <token>` when one is set.
+- `AuthContext.jsx`: calls `setAccessToken(...)` after a successful `login()` and after a successful `refresh()` in `restoreSession()`; calls `setAccessToken(null)` in `logout()`.
 
 **Minor, not blocking:** field-shape mismatch between `POST /api/auth/login`'s `usuario: {id, nombre, rol}` (flat string `rol`) and `GET /api/usuarios/me`'s `{nombreCompleto, usuario, rol: {id, nombreRol}}` — already handled correctly by manual mapping in both places in `AuthContext.jsx`, but worth aligning with Antony later so this class of bug doesn't recur.
 
-Once the fix is confirmed working, delete the commented-out `MOCK_USERS` block in `userService.jsx` instead of leaving it as dead code. Note: `hasPermission` in `AuthContext.jsx` references role names (`Alumno`, `Catedratico`) that don't match the actual roles used elsewhere (`Estudiante`, `Docente`, `Admin`) and isn't called anywhere — treat it as stale/unused.
+**Still open, low priority:** delete the commented-out `MOCK_USERS` block in `userService.jsx` (dead code, no longer needed as reference). `hasPermission` in `AuthContext.jsx` references role names (`Alumno`, `Catedratico`) that don't match the actual roles used elsewhere (`Estudiante`, `Docente`, `Admin`) and isn't called anywhere — treat it as stale/unused.
 
 ### Routing and role gating
 
@@ -129,15 +122,15 @@ Módulo 2 (ampliado) adds a `secciones` concept alongside `grados`, so the schoo
 - Will need a `gradosService`/`seccionesService` (or extend an existing service file) wrapping `apiClient` calls to the two endpoints above.
 - Grado select in the create/edit modal should be populated from `GET /api/grados`.
 
-### Real integration: auth against the live backend (cross-domain infra confirmed good)
+### Real integration: auth against the live backend — done
 
-The Módulo 1 auth flow — login, refresh, logout, protected routes, and `usuarios/me` — is wired to Antony's deployed backend (Railway) instead of `MOCK_USERS`. The cross-domain plumbing this needed (frontend on GitHub Pages, backend on Railway, different domains) is confirmed working end-to-end via direct testing against production:
+The Módulo 1 auth flow — login, refresh, logout, protected routes, and `usuarios/me` — is wired to Antony's deployed backend (Railway) instead of `MOCK_USERS`, and the full loop (login → reload → logout) is confirmed working end-to-end against production as of 2026-09-19 (see "Auth: real integration fixed and validated end-to-end" above).
 
 - `apiClient`'s `baseURL` comes from `VITE_API_URL`, `withCredentials: true` is set, and the backend's refresh cookie (`sameSite=none; secure=true` in production) is correctly sent/received cross-domain — verified: login sets the cookie, refresh reads it and returns a valid new token, logout revokes it server-side.
 - CORS is correctly scoped (`Access-Control-Allow-Credentials: true`, `Access-Control-Allow-Origin` matching this deploy's exact GitHub Pages origin) — confirmed via response headers.
 - Infra is live end-to-end: Neon Postgres + Railway deploy on the backend (test users, roles, and `grados`/`secciones` data already seeded), GitHub Pages on this repo.
 
-**The only remaining gap is the frontend-side bug described in "Auth: real bug found" above** — the backend/cross-domain layer is not the problem; `accessToken` handling in this repo is. Once that's fixed, re-run login → reload → logout against the live deploy as the acceptance check.
+This piece of Módulo 2 is closed. Next active frontend work is the `Secciones` admin page (above).
 
 This round of integration is scoped to auth + Secciones only — the rest of the Módulo 2 backend surface (`actividades`, `reportes`) stays out of scope for now, and the student/group model stays fully blocked on Josue's decision.
 
