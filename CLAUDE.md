@@ -32,13 +32,16 @@ React 19 + Vite SPA (`login-react` in package.json), plain JavaScript (`.jsx`, n
 
 Roles on the backend are stored lowercase (`administrador`, `docente`, `estudiante`); the frontend uses capitalized role strings (`Admin`, `Docente`, `Estudiante`) — this mapping happens on the backend response, not in this repo.
 
-### Auth is currently fully mocked
+### Auth: real integration wired, not yet validated end-to-end
 
-`src/services/userService.jsx` does **not** call the backend — it checks credentials against a hardcoded `MOCK_USERS` array (`estudiante`/`docente`/`admin`, all password `1234`) with an artificial delay. `src/services/apiClient.jsx` (axios instance pointed at `http://localhost:3001`) exists but is unused by `userService`. When wiring up real auth, `userService.login` is the place to swap the mock for a real `apiClient` call — keep the return shape (`{ success, data: { user } }` / `{ success: false, error }`) since `AuthContext.login` depends on it.
+`src/services/userService.jsx` no longer uses mocks (the old `MOCK_USERS` array is left commented out for reference, not deleted — safe to remove once real auth is confirmed working). It now calls the real backend through `apiClient`: `login`, `refresh`, `logout`, `me` all hit `edu-analitica-backend` (`POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/usuarios/me`). `src/services/apiClient.jsx` is an axios instance with `baseURL` from `VITE_API_URL` (env var, set in the GitHub Pages deploy workflow) and `withCredentials: true` so the httpOnly refresh cookie survives the cross-domain request to Railway.
 
-`AuthContext` (`src/context/AuthContext.jsx`) persists the logged-in user to `localStorage` under `edua-user` and exposes `login`, `logout`, `hasRole`, `isAuthenticated`. Note: `hasPermission` in the same file references role names (`Alumno`, `Catedratico`) that don't match the actual roles used elsewhere (`Estudiante`, `Docente`, `Admin`) and isn't called anywhere — treat it as stale/unused rather than a source of truth for permissions.
+`AuthContext` (`src/context/AuthContext.jsx`) was rewritten to restore the session via `userService.refresh()` on mount instead of reading a persisted user from `localStorage` — this matches the "planned" model below, now implemented. Note: `hasPermission` in the same file references role names (`Alumno`, `Catedratico`) that don't match the actual roles used elsewhere (`Estudiante`, `Docente`, `Admin`) and isn't called anywhere — treat it as stale/unused rather than a source of truth for permissions.
 
-**Session storage note:** current code persists the full user object to `localStorage`. Earlier project planning called for keeping `accessToken` in memory only (React context, never `localStorage`) with a `refreshToken` in an httpOnly cookie, to avoid XSS exposure — see "Real auth model (planned, not implemented)" below. Keep that in mind when real auth gets wired up; it's a deliberate security requirement from the project spec, not just a style preference.
+**Not yet done — this is the current work:**
+- The full login → reload → logout loop has **not been validated against the real deployed backend yet** (per the commit that wired this up). Infra is ready (Neon DB + Railway deploy on the backend side, GitHub Pages on this side) so there's no infra blocker left — this is purely "run the flow and see if it holds," coordinating with Antony if refresh/cookie behavior looks off.
+- Several `TODO BACKEND` comments in `apiClient.jsx` / `userService.jsx` mark points to confirm with Antony: exact response shape/field names for `/api/auth/login` and `/api/usuarios/me`, and that the backend's CORS actually has `credentials: true` with `FRONTEND_URL` matching this deploy's exact origin.
+- Once the flow is confirmed working, delete the commented-out `MOCK_USERS` block in `userService.jsx` instead of leaving it as dead code.
 
 ### Routing and role gating
 
@@ -91,8 +94,8 @@ POST /api/auth/logout   → 204
 
 GET/POST/PUT/DELETE /api/usuarios
 GET/POST/PUT         /api/modulos
-GET/POST             /api/grados
-GET/POST/PUT/DELETE  /api/secciones?id_grado=   planned — see "Secciones" below, not implemented yet
+GET/POST             /api/grados          implemented on backend, admin-only
+GET/POST/PUT/DELETE  /api/secciones?id_grado=   implemented on backend, admin-only — not yet consumed here, see "Secciones" below
 GET                  /api/admin/resumen
 
 GET/POST/PUT  /api/actividades
@@ -104,24 +107,32 @@ GET           /api/reportes/:id/pdf
 GET           /api/usuarios/me   planned — see "Real integration" below, not implemented yet
 ```
 
-### Secciones (planned, not implemented)
+### Secciones (backend ready, frontend page not built yet)
 
 Módulo 2 (ampliado) adds a `secciones` concept alongside `grados`, so the school can organize students into real groups (e.g. "1ro A", "1ro B") instead of just a grade level. `secciones` relates 1-to-many to `grados` (`id_grado` FK, unique on `id_grado + nombre_seccion`, soft-deleted via `activa`). Once the student/group model is defined (still blocked on Josue), it will hang off `secciones`, not `grados` directly.
 
-On the frontend this means a new Admin-only page, `Secciones` (a table + create/edit modal with a Grado select), added as a tab in the admin dashboard next to Usuarios/Módulos/Grados — following the same `src/pages/admin/*` + `menuItems` pattern described above, backed by `GET/POST/PUT/DELETE /api/secciones?id_grado=`. None of this exists in the codebase yet.
+**Backend is done**: `GET/POST /api/grados` and `GET/POST/PUT/DELETE /api/secciones?id_grado=` are implemented, admin-only, with duplicate validation and soft-delete (see `edu-analitica-backend` CLAUDE.md "Current entregable"). Nothing on the frontend consumes them yet — this is the next concrete piece of work here:
 
-### Real integration: auth against the live backend (planned, not implemented)
+- New Admin-only page, `Secciones` (a table + create/edit modal with a Grado select), added as a tab in the admin dashboard next to Usuarios/Módulos/Grados — follow the same `src/pages/admin/*` + `menuItems` pattern described above (see `src/pages/admin/UsuariosAdmin.jsx` for the closest existing table+modal example to copy from).
+- Will need a `gradosService`/`seccionesService` (or extend an existing service file) wrapping `apiClient` calls to the two endpoints above.
+- Grado select in the create/edit modal should be populated from `GET /api/grados`.
 
-The first real (non-mock) integration point is the Módulo 1 auth flow — login, refresh, logout, protected routes, and `usuarios/me` — connecting `userService`/`apiClient` to Antony's deployed backend instead of `MOCK_USERS`. This is scoped narrower than the full "Real auth model" described above: it's specifically about making that model work once frontend and backend are deployed on **different domains** (frontend on GitHub Pages/Vercel/Netlify, backend on Railway), which the original Módulo 1 design didn't account for. Concretely, when this gets built:
+### Real integration: auth against the live backend (implemented, pending validation)
 
-- `apiClient`'s `API_BASE_URL` needs to come from an env var (e.g. `VITE_API_URL`) pointing at the deployed backend, not hardcoded to `http://localhost:3001`.
-- Every request that relies on the refresh cookie needs `withCredentials: true` on the axios client (or `credentials: 'include'` for `fetch`) — without it, the httpOnly refresh cookie never gets sent or set cross-domain.
-- The backend's refresh cookie needs `sameSite=none; secure=true` and its CORS `FRONTEND_URL` must be the exact deployed frontend origin (not `*`) for the cookie to survive a cross-domain request at all.
-- **If session doesn't persist across a page reload after login, suspect this cross-domain cookie config first** (`withCredentials`/`credentials`, `sameSite`, or backend CORS) before assuming it's a frontend bug — coordinate with Antony rather than debugging it solo.
-- Flow to validate once wired up: login → reload the page (session recovers via `/api/auth/refresh`) → logout (a subsequent refresh should actually fail, i.e. the session was revoked server-side, not just cleared from local state).
-- Landing pages should show the real `nombre_completo` from `GET /api/usuarios/me` instead of relying only on what's baked into the JWT.
+The Módulo 1 auth flow — login, refresh, logout, protected routes, and `usuarios/me` — is wired to Antony's deployed backend (Railway) instead of `MOCK_USERS`; see "Auth: real integration wired" above. The cross-domain concerns this originally had to account for (frontend on GitHub Pages, backend on Railway, different domains) are handled on both sides already:
 
-This round of integration is scoped to auth + Secciones only — the rest of the Módulo 2 backend surface (`actividades`, `reportes`) stays mocked for now, and the student/group model stays fully blocked on Josue's decision.
+- `apiClient`'s `baseURL` comes from `VITE_API_URL` (env var, injected in the GitHub Pages deploy workflow) — not hardcoded.
+- `apiClient` sets `withCredentials: true` so the httpOnly refresh cookie is sent/received cross-domain.
+- Backend's refresh cookie is `sameSite=none; secure=true` in production (fixed on Antony's side), and CORS `FRONTEND_URL` is scoped to this deploy's exact origin.
+- Infra is live end-to-end: Neon Postgres + Railway deploy on the backend, GitHub Pages on this repo. No infra blocker remains.
+
+**What's left is validation, not plumbing:**
+- Run the actual flow against production: login → reload the page (session should recover via `/api/auth/refresh`) → logout (a subsequent refresh should then fail — session revoked server-side, not just cleared locally). This has not been confirmed working yet.
+- **If session doesn't persist across a page reload after login, suspect the cross-domain cookie config first** (`withCredentials`, `sameSite`, or backend CORS `FRONTEND_URL` mismatch) before assuming it's a frontend bug — coordinate with Antony rather than debugging it solo.
+- Confirm landing pages show the real `nombre_completo` from `GET /api/usuarios/me` correctly once validated end-to-end.
+- Resolve the `TODO BACKEND` comments in `apiClient.jsx`/`userService.jsx` with Antony (exact response field names).
+
+This round of integration is scoped to auth + Secciones only — the rest of the Módulo 2 backend surface (`actividades`, `reportes`) stays out of scope for now, and the student/group model stays fully blocked on Josue's decision.
 
 ### Planned testing setup (not started)
 
