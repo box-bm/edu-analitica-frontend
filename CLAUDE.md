@@ -20,13 +20,20 @@ Team: Jose (frontend, owner of this repo) · Antony (backend) · María José (Q
 ## Commands
 
 ```bash
-npm run dev       # start Vite dev server (http://localhost:5173/edu-analitica-frontend/)
-npm run build     # production build to dist/
-npm run preview   # preview the production build
-npm run lint      # eslint .
+npm run dev        # start Vite dev server (http://localhost:5173/edu-analitica-frontend/)
+npm run build      # production build to dist/
+npm run preview    # preview the production build
+npm run lint       # eslint .
+npm test           # vitest run — unit/integration tests, no network, no dev server needed
+npm run test:watch # vitest in watch mode
 ```
 
-There is no test runner configured in this project (no Cypress or other E2E runner is set up, despite being called for in earlier planning docs — see below).
+**Testing (2026-09-19):** Vitest + React Testing Library, configured in `vite.config.js` (`test` block) with `tests/setup.js` loading `@testing-library/jest-dom`. Chosen over Cypress E2E (the original plan, see "Planned testing setup" below) because it needs no running dev server or live backend — tests mock `userService` and use a fake axios adapter, so they run in under a second and are safe for CI. Current coverage (`tests/`):
+- `apiClient.test.js` — the Authorization interceptor (the exact bug fixed above): no header with no token, `Bearer <token>` once `setAccessToken` is called, cleared again after logout.
+- `AuthContext.test.jsx` — `restoreSession` on mount (success and failure), `login()`, `logout()`, and that the accessToken each of these produces actually reaches outgoing requests (integration-style, using the real `apiClient`, only `userService` is mocked).
+- `PrivateRoute.test.jsx` — loading state, redirect when unauthenticated, redirect to `/no-autorizado` on role mismatch, renders children when authorized.
+
+This does **not** replace the live-deploy validation from "Auth: real integration fixed" above — these are fast regression tests for the logic, not a substitute for testing against the real backend before shipping an auth-related change.
 
 ## Architecture (current implementation)
 
@@ -134,12 +141,12 @@ This piece of Módulo 2 is closed. Next active frontend work is the `Secciones` 
 
 This round of integration is scoped to auth + Secciones only — the rest of the Módulo 2 backend surface (`actividades`, `reportes`) stays out of scope for now, and the student/group model stays fully blocked on Josue's decision.
 
-### Planned testing setup (not started)
+### Testing setup — Vitest done (2026-09-19), Cypress E2E still not started
 
-No test tooling exists in this repo yet (see "Commands" above). When QA setup lands, the plan is:
+Unit/integration coverage now exists via Vitest — see "Testing" under Commands above. That covers the auth logic fast and without infra, but it is **not** a substitute for the originally-planned Cypress E2E suite, which is still worth doing for a true "click through the real app" regression check:
 
 - Install Cypress in this repo; `cypress.config.ts` with a configurable `baseUrl` (local vs. the real deploy) — note this implies a `.ts` config file even though the rest of the app is `.jsx`, since Cypress config is commonly TypeScript regardless of app language.
-- First real spec: `cypress/e2e/auth.cy.ts` covering login → role landing → logout against the real integrated backend.
+- First real spec: `cypress/e2e/auth.cy.ts` covering login → role landing → logout against the real integrated backend — the same loop already validated manually in "Auth: real integration fixed" above, just automated.
 - A fixed test user (e.g. `admin.test`) seeded in the backend's dedicated testing DB branch, so tests don't depend on real school data.
 - Document how to run tests in `TESTING.md` (or a section here) so the whole team can run them, not just QA.
 
