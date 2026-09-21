@@ -233,45 +233,6 @@ export const AuthProvider = ({ children }) => {
     return user.rol === requiredRole;
   };
 
-  const hasPermission = (permission) => {
-    if (!user) return false;
-
-    // TODO BACKEND: confirmar que estos nombres de rol ('Alumno',
-    // 'Catedratico', 'Admin') coincidan EXACTAMENTE (mayúsculas/minúsculas
-    // y sin tildes) con lo que el backend devuelve en el JWT. Si no
-    // coinciden, hasPermission() y hasRole() van a fallar silenciosamente
-    // (todo se comporta como "sin permiso").
-    const permissions = {
-      'evidencias.crear': ['Alumno', 'Catedratico', 'Admin'],
-      'evidencias.ver': ['Alumno', 'Catedratico', 'Admin'],
-      'evidencias.editar': ['Alumno', 'Catedratico', 'Admin'],
-
-      'evidencias.aprobar': ['Catedratico', 'Admin'],
-      'evidencias.rechazar': ['Catedratico', 'Admin'],
-      'evidencias.revisar': ['Catedratico', 'Admin'],
-
-      'expedientes.crear': ['Alumno', 'Catedratico', 'Admin'],
-      'expedientes.ver': ['Alumno', 'Catedratico', 'Admin'],
-      'expedientes.editar': ['Catedratico', 'Admin'],
-      'expedientes.eliminar': ['Admin'],
-
-      'usuarios.ver': ['Catedratico', 'Admin'],
-      'usuarios.crear': ['Admin'],
-      'usuarios.editar': ['Admin'],
-      'usuarios.eliminar': ['Admin'],
-
-      'reportes.ver': ['Catedratico', 'Admin'],
-      'reportes.generar': ['Catedratico', 'Admin'],
-      'reportes.exportar': ['Catedratico', 'Admin'],
-
-      'dashboard.estadisticas': ['Catedratico', 'Admin'],
-      'dashboard.reportes': ['Catedratico', 'Admin']
-    };
-
-    const allowedRoles = permissions[permission] || [];
-    return allowedRoles.includes(user.rol);
-  };
-
   const value = {
     user,
     loading,
@@ -279,7 +240,6 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     hasRole,
-    hasPermission,
     isAuthenticated: !!user
   };
 
