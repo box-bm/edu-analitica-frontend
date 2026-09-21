@@ -123,13 +123,45 @@ GET           /api/usuarios/me   planned — see "Real integration" below, not i
 
 ### Secciones (backend ready, frontend page not built yet)
 
-Módulo 2 (ampliado) adds a `secciones` concept alongside `grados`, so the school can organize students into real groups (e.g. "1ro A", "1ro B") instead of just a grade level. `secciones` relates 1-to-many to `grados` (`id_grado` FK, unique on `id_grado + nombre_seccion`, soft-deleted via `activa`). Once the student/group model is defined (still blocked on Josue), it will hang off `secciones`, not `grados` directly.
+Módulo 2 (ampliado) adds a `secciones` concept alongside `grados`, so the school can organize students into real groups (e.g. "1ro A", "1ro B") instead of just a grade level. `secciones` relates 1-to-many to `grados` (`id_grado` FK, unique on `id_grado + nombre_seccion`, soft-deleted via `activa`). The student/group model is now defined (see "Módulo 3: actividades y acceso por grupo" below) and it hangs off `secciones`, not `grados` directly.
 
 **Backend is done**: `GET/POST /api/grados` and `GET/POST/PUT/DELETE /api/secciones?id_grado=` are implemented, admin-only, with duplicate validation and soft-delete (see `edu-analitica-backend` CLAUDE.md "Current entregable"). Nothing on the frontend consumes them yet — this is the next concrete piece of work here:
 
 - New Admin-only page, `Secciones` (a table + create/edit modal with a Grado select), added as a tab in the admin dashboard next to Usuarios/Módulos/Grados — follow the same `src/pages/admin/*` + `menuItems` pattern described above (see `src/pages/admin/UsuariosAdmin.jsx` for the closest existing table+modal example to copy from).
 - Will need a `gradosService`/`seccionesService` (or extend an existing service file) wrapping `apiClient` calls to the two endpoints above.
 - Grado select in the create/edit modal should be populated from `GET /api/grados`.
+
+### Módulo 3: actividades y acceso por grupo (planning locked in 2026-09-21 — next requirement for Jose)
+
+The previously-open "student access model" decision (formerly listed under "Open decisions" below) is now resolved: student access is **by group/sección**, through a coordinator who logs in with an **access code**, not a traditional `usuario`/`password` login — it does not go through `/login` or `AuthContext`. This is what unblocks the activities-based student flow flagged as spec-only in "Original project spec vs. what's actually built" above (`estudiante/SeleccionModulo`, `Actividad`, `Resultado`) — it's the next concrete work item for Jose.
+
+**New/updated pages** (use this repo's existing lowercase-`.jsx` naming, not the PascalCase names from the original planning doc):
+- `src/pages/docente/Grupos.jsx` (new) — list/create groups per sección, view/regenerate the group's access code.
+- `src/pages/estudiante/AccesoGrupo.jsx` (new) — access-code entry screen, replaces traditional login for this role.
+- `src/pages/estudiante/SeleccionModulo.jsx`, `Actividad.jsx`, `Resultado.jsx` — exist today only as the spec-only UI noted above; this wires them to the new group session token.
+
+**Group session handling is separate from `AuthContext`:**
+- The coordinator does **not** use `AuthContext` the way docente/admin do — this is a separate, short-lived (~45 min proposed), limited-scope group session token.
+- No refresh token for this flow — when it expires, the coordinator re-enters the access code.
+- Same non-negotiable as everywhere else in this app: the token lives in memory only, never `localStorage`.
+- `AccesoGrupo.jsx` calls `POST /api/auth/grupo-login` with the code and holds the returned token in memory.
+
+**API contract — Grupo (new; confirm exact status/shape with Antony before relying on it, per the sync note below):**
+```
+POST /api/grupos                        [docente]
+GET  /api/docentes/me/grupos            [docente]
+PUT  /api/grupos/:id/regenerar-codigo   [docente]
+
+POST /api/auth/grupo-login              [public]     body: {codigo_acceso} → grupo token
+GET  /api/grupo/me/actividades          [grupo token]
+GET  /api/actividades/:id/preguntas     [grupo token]
+POST /api/actividades/:id/respuestas    [grupo token]
+GET  /api/grupo/me/avance               [grupo token]
+```
+
+**UX note:** confirm the final access-code format with Antony — avoid ambiguous characters (`O`/`0`, `I`/`1`), since kids will be reading it off a whiteboard or hearing it read aloud and transcribing it themselves.
+
+**Still pending before implementation starts:** confirm whether the real mechanism is "one code per group" (current design) vs. an individual PIN with later aggregation — this changes `AccesoGrupo.jsx` and the whole flow for this section.
 
 ### Real integration: auth against the live backend — done
 
@@ -141,7 +173,7 @@ The Módulo 1 auth flow — login, refresh, logout, protected routes, and `usuar
 
 This piece of Módulo 2 is closed. Next active frontend work is the `Secciones` admin page (above).
 
-This round of integration is scoped to auth + Secciones only — the rest of the Módulo 2 backend surface (`actividades`, `reportes`) stays out of scope for now, and the student/group model stays fully blocked on Josue's decision.
+This round of integration is scoped to auth + Secciones only — the rest of the Módulo 2 backend surface (`actividades`, `reportes`) stays out of scope for now. The student/group model that was previously blocking that work is now resolved — see "Módulo 3: actividades y acceso por grupo" above for what that unblocks.
 
 ### Testing setup — Vitest done (2026-09-19), Cypress E2E still not started
 
@@ -154,6 +186,6 @@ Unit/integration coverage now exists via Vitest — see "Testing" under Commands
 
 ### Open decisions (per project planning, unresolved as of last sync)
 
-- Student access model (individual login vs. group/shared access) — blocked on Josue; affects the estudiante login/identification flow and the data shape for a `Resultado` result screen, and downstream affects how `secciones` eventually links to students.
+- ~~Student access model (individual login vs. group/shared access) — blocked on Josue~~ **resolved 2026-09-21: group/sección access via a coordinator access-code login.** See "Módulo 3: actividades y acceso por grupo" above; one sub-decision remains open there (code-per-group vs. individual PIN with aggregation).
 - Whether docente accounts (created by admin with a temporary password) require a forced password change on first login.
 - Final copy/tone for the student-facing result screen — needs to fit the "no failure-sounding messaging" constraint above.
