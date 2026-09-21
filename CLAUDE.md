@@ -35,6 +35,8 @@ npm run test:watch # vitest in watch mode
 
 This does **not** replace the live-deploy validation from "Auth: real integration fixed" above — these are fast regression tests for the logic, not a substitute for testing against the real backend before shipping an auth-related change.
 
+**CI (2026-09-21):** `.github/workflows/deploy.yml` runs `npm test` right before the build step — a failing test blocks the GitHub Pages deploy, it doesn't just report red somewhere. `.github/workflows/ci.yml` runs the same suite on every PR targeting `main` (deploy.yml only triggers on push to `main`, so PRs had no automated check before this). **Node version gotcha hit and fixed:** `jsdom` v30 requires Node `^22.22.2 || ^24.15.0 || >=26.0.0` — the first CI run failed on Node 20 even though it passed locally (local Node was 26). Both workflows now pin `node-version: 22`, and `package.json` declares `engines.node: ">=22.22.2"` so this doesn't quietly bite anyone running tests locally on an older Node either.
+
 ## Architecture (current implementation)
 
 React 19 + Vite SPA (`login-react` in package.json), plain JavaScript (`.jsx`, not TypeScript) with plain CSS (no Tailwind). Deployed to GitHub Pages at the `/edu-analitica-frontend/` subpath — `vite.config.js` sets `base` accordingly and `App.jsx` passes `basename={import.meta.env.BASE_URL}` to the router, so both must stay in sync with the repo name.
