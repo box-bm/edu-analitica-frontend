@@ -1,13 +1,13 @@
 import DashboardLayout from '../components/DashboardLayout';
 import InicioDocente from './docente/InicioDocente';
-import CursosDocente from './docente/CursosDocente';
-import EstudiantesDocente from './docente/EstudiantesDocente';
+import Grupos from './docente/Grupos';
+import ActividadesDocente from './docente/ActividadesDocente';
 import ReportesDocente from './docente/ReportesDocente';
 
 const MENU_DOCENTE = [
   { label: 'Inicio', icon: '🏠', content: <InicioDocente /> },
-  { label: 'Cursos', icon: '📚', content: <CursosDocente /> },
-  { label: 'Estudiantes', icon: '👥', content: <EstudiantesDocente /> },
+  { label: 'Grupos', icon: '🎒', content: <Grupos /> },
+  { label: 'Actividades', icon: '🧩', content: <ActividadesDocente /> },
   { label: 'Reportes', icon: '📄', content: <ReportesDocente /> },
 ];
 

@@ -1,0 +1,322 @@
+/* --- Tarjetas de grupo ------------------------------------------------ */
+
+.grupos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1.1rem;
+}
+
+.grupo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--line);
+  background: var(--paper);
+}
+
+.grupo-card h4 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.grupo-card footer {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.codigo-grande {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.7rem;
+  border-radius: var(--radius);
+  background: var(--ink);
+  user-select: all;
+}
+
+.codigo-grande span {
+  width: 2.1rem;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--sun);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.avances {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.avances li {
+  display: grid;
+  grid-template-columns: 7rem 1fr 2.6rem;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.avances b {
+  text-align: right;
+  color: var(--teal-deep);
+}
+
+.aciertos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+}
+
+/* --- Actividades ------------------------------------------------------ */
+
+.chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 2px solid var(--line-strong);
+  background: var(--surface);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.chip-toggle[aria-pressed='true'] {
+  background: var(--orange-soft);
+  border-color: var(--orange);
+  color: var(--orange-deep);
+}
+
+.actividades-docente {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.actividad-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 1.15rem;
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--line);
+  background: var(--paper);
+}
+
+.actividad-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.actividad-modulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.actividad-card h4 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.actividad-card p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.actividad-card footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.4rem;
+}
+
+.actividad-card footer .texto-suave {
+  margin: 0 auto 0 0;
+  font-weight: 700;
+}
+
+/* --- Editor de actividad --------------------------------------------- */
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+
+.editor-grid .form-field:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.editor-preguntas-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.4rem 0 0.75rem;
+}
+
+.editor-preguntas-cabecera h4 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.contador-preguntas {
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: var(--teal-soft);
+  color: var(--teal-deep);
+}
+
+.contador-preguntas.lleno {
+  background: var(--sun-soft);
+  color: var(--ink);
+}
+
+.pregunta-editor {
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  background: var(--paper);
+}
+
+.pregunta-editor + .pregunta-editor {
+  margin-top: 0.75rem;
+}
+
+.pregunta-editor-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.pregunta-editor-top .form-field {
+  flex: 1;
+}
+
+.pregunta-num {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--orange);
+  color: white;
+  font-weight: 800;
+  margin-top: 1.4rem;
+}
+
+.opciones-editor {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.7rem 0 0 2.6rem;
+}
+
+.opcion-editor {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.opcion-editor input[type='text'] {
+  flex: 1;
+  padding: 0.45rem 0.7rem;
+  border: 2px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.opcion-editor input[type='text']:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.opcion-correcta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.opcion-correcta input {
+  accent-color: var(--teal);
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.opcion-editor.es-correcta input[type='text'] {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+}
+
+.lectura-pregunta {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.lectura-pregunta li {
+  margin-bottom: 0.7rem;
+}
+
+.lectura-pregunta ul {
+  margin: 0.3rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.lectura-pregunta ul li {
+  margin: 0;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--paper-deep);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.lectura-pregunta ul li.correcta {
+  background: var(--teal-soft);
+  color: var(--teal-deep);
+}
+
+@media (max-width: 640px) {
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .opciones-editor {
+    margin-left: 0;
+  }
+}

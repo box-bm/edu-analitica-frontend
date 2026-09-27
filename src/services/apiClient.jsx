@@ -1,8 +1,7 @@
 import axios from 'axios';
 
 
-// TODO BACKEND: cuando Antony despliegue en Railway, actualizar el valor de
-// VITE_API_URL en el archivo .env (no tocar este archivo).
+// URL del backend: VITE_API_URL (.env en local, secret del workflow de deploy).
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 const apiClient = axios.create({
@@ -12,9 +11,8 @@ const apiClient = axios.create({
     'Accept': 'application/json',
   },
   timeout: 10000,
-  // TODO BACKEND: confirmar con Antony que su CORS tiene configurado
-  // credentials: true en el backend también — withCredentials aquí no
-  // sirve de nada si el servidor no lo permite del otro lado.
+  // Necesario para que viaje la cookie httpOnly del refresh token entre
+  // dominios (el backend tiene CORS con credentials: true).
   withCredentials: true,
 });
 

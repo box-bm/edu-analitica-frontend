@@ -1,17 +1,14 @@
 const COLORES = {
-  Excelente: '#16a34a',
-  Bueno: '#2563eb',
-  Regular: '#f59e0b',
-  Bajo: '#dc2626',
-  Activo: '#16a34a',
-  Inactivo: '#94a3b8',
-  Admin: '#7c3aed',
-  Docente: '#2563eb',
-  Estudiante: '#16a34a',
+  Activo: '#3aa55c',
+  Inactivo: '#8390a8',
+  Admin: '#8a63f0',
+  Docente: '#149e94',
+  Catálogo: '#8a63f0',
+  Propia: '#f2663a',
 };
 
 export default function Badge({ children }) {
-  const color = COLORES[children] ?? '#64748b';
+  const color = COLORES[children] ?? '#4b5a7a';
   return (
     <span className="badge" style={{ backgroundColor: `${color}1a`, color }}>
       {children}

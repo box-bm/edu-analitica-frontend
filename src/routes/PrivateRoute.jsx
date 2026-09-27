@@ -5,7 +5,7 @@ export default function PrivateRoute({ children, allowedRoles }) {
   const { isAuthenticated, hasRole, loading } = useAuth();
 
   if (loading) {
-    return <p>Cargando...</p>;
+    return <p className="cargando pantalla-cargando">Cargando...</p>;
   }
 
   if (!isAuthenticated) {

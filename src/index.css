@@ -1,124 +1,248 @@
+/* ==========================================================================
+   EducAnalítica — sistema visual "escolar cálido y lúdico"
+   Tinta azul marino (del logo) + acentos naranja, turquesa y amarillo sobre
+   papel crema. Todos los colores salen de estos tokens; no hardcodear hex en
+   componentes nuevos.
+   ========================================================================== */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Tinta y papel */
+  --ink: #16284d;
+  --ink-soft: #4b5a7a;
+  --ink-muted: #8390a8;
+  --paper: #fff8ec;
+  --paper-deep: #fbefd9;
+  --surface: #ffffff;
+  --line: #f0e4cf;
+  --line-strong: #e3d3b6;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Acentos */
+  --orange: #f2663a;
+  --orange-deep: #d9502a;
+  --orange-soft: #ffe7dc;
+  --teal: #149e94;
+  --teal-deep: #0e7f77;
+  --teal-soft: #d8f3ef;
+  --sun: #ffc233;
+  --sun-deep: #e6a100;
+  --sun-soft: #fff1c9;
+  --sky: #3d8bfd;
+  --sky-soft: #e0edff;
+  --grape: #8a63f0;
+  --grape-soft: #ede5ff;
+  --leaf: #3aa55c;
+  --leaf-soft: #def5e4;
+  /* Solo para errores de formulario en paneles adultos — nunca en la zona de niños. */
+  --alert: #c8412b;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  /* Forma */
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 24px;
+  --shadow-card: 0 1px 0 var(--line), 0 8px 24px -12px rgba(22, 40, 77, 0.18);
+  --shadow-pop: 0 4px 0 var(--line-strong);
+
+  --font-body: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Baloo 2', 'Nunito', 'Segoe UI', system-ui, sans-serif;
+
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--paper);
+  color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-body {
-  margin: 0;
-}
-
-/* #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
-} */
-
-:root {
-  font-family: system-ui, -apple-system, sans-serif;
 }
 
 body {
   margin: 0;
   padding: 0;
+  background: var(--paper);
 }
 
 #root {
   min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  color: var(--ink);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--sun);
+  outline-offset: 2px;
+}
+
+/* --- Botones compartidos (paneles adultos) ----------------------------- */
+
+.btn-primary,
+.btn-secondary,
+.btn-ghost,
+.btn-teal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.12s ease;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--orange);
+  color: white;
+  box-shadow: 0 3px 0 var(--orange-deep);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--orange-deep);
+  transform: translateY(-1px);
+}
+
+.btn-teal {
+  background: var(--teal);
+  color: white;
+  box-shadow: 0 3px 0 var(--teal-deep);
+}
+
+.btn-teal:hover:not(:disabled) {
+  background: var(--teal-deep);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line-strong);
+  box-shadow: 0 3px 0 var(--line);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--paper);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  padding-inline: 0.8rem;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--paper-deep);
+  color: var(--ink);
+}
+
+.btn-primary:active:not(:disabled),
+.btn-teal:active:not(:disabled),
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.btn-primary:disabled,
+.btn-teal:disabled,
+.btn-secondary:disabled,
+.btn-ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+/* --- Estados de carga / vacío ----------------------------------------- */
+
+.estado-vacio {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--ink-soft);
+}
+
+.estado-vacio .estado-emoji {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.estado-vacio h3 {
+  margin: 0 0 0.25rem;
+}
+
+.estado-vacio p {
+  margin: 0 auto 1rem;
+  max-width: 36ch;
+}
+
+.cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2rem;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+
+.cargando::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid var(--line-strong);
+  border-top-color: var(--orange);
+  animation: girar 0.8s linear infinite;
+}
+
+.pantalla-cargando {
+  min-height: 100vh;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

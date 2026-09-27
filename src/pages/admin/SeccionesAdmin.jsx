@@ -167,7 +167,7 @@ export default function SeccionesAdmin() {
       </div>
 
       {grados.length === 0 && (
-        <p className="form-feedback" style={{ color: '#94a3b8' }}>
+        <p className="form-feedback" style={{ color: '#8390a8' }}>
           No hay grados registrados todavía — crea un grado antes de poder agregar secciones.
         </p>
       )}
@@ -201,7 +201,7 @@ export default function SeccionesAdmin() {
           ))}
           {visibles.length === 0 && (
             <tr>
-              <td colSpan={4} style={{ color: '#94a3b8' }}>
+              <td colSpan={4} style={{ color: '#8390a8' }}>
                 No hay secciones para este filtro.
               </td>
             </tr>

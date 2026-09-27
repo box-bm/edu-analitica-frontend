@@ -1,38 +1,47 @@
+import { useAuth } from '../../context/AuthContext';
+import useCarga from '../../hooks/useCarga';
 import StatCard from '../../components/dashboard/StatCard';
-import { CURSOS, CURSOS_DOCENTE_ACTUAL, ESTUDIANTES, promedioCurso } from '../../data/mockData';
+import GraficasResumen from '../../components/reportes/GraficasResumen';
+import reportesService from '../../services/reportesService';
 
-const misCursos = CURSOS.filter((c) => CURSOS_DOCENTE_ACTUAL.includes(c.id));
-const promedioMisCursos = (
-  misCursos.reduce((acc, c) => acc + promedioCurso(c.id), 0) / misCursos.length
-).toFixed(1);
+const cargarResumen = () => reportesService.resumen();
 
 export default function InicioDocente() {
+  const { user } = useAuth();
+  const { datos, error, cargando, recargar } = useCarga(cargarResumen);
+
+  if (cargando) return <p className="cargando">Cargando resumen…</p>;
+  if (error) {
+    return (
+      <div className="panel estado-vacio">
+        <span className="estado-emoji">📡</span>
+        <p>{error}</p>
+        <button className="btn-secondary" onClick={recargar}>Reintentar</button>
+      </div>
+    );
+  }
+
+  const { totales } = datos;
+
   return (
     <div>
       <div className="welcome-card">
-        <h2>Mis cursos</h2>
-        <p>Resumen de {misCursos.map((c) => c.nombre).join(' y ')} para el grado 9°.</p>
+        <h2>Tus grupos, {user?.nombre?.split(' ')[0] ?? 'docente'}</h2>
+        <p>
+          {totales.grupos === 0
+            ? 'Todavía no tienes grupos: créalos en la pestaña Grupos y comparte su código con cada equipo.'
+            : 'Así van tus grupos con las actividades. Los detalles por pregunta están en Reportes.'}
+        </p>
       </div>
 
       <div className="kpi-grid">
-        <StatCard label="Cursos a cargo" value={misCursos.length} accent="#2563eb" />
-        <StatCard label="Estudiantes" value={ESTUDIANTES.length} accent="#16a34a" />
-        <StatCard label="Promedio de mis cursos" value={promedioMisCursos} accent="#f59e0b" />
-        <StatCard label="Formularios pendientes" value={2} hint="Notas del Periodo 3" accent="#dc2626" />
+        <StatCard label="Mis grupos" value={totales.grupos} accent="var(--orange)" />
+        <StatCard label="Actividades disponibles" value={totales.actividades} hint="Catálogo + propias" accent="var(--grape)" />
+        <StatCard label="Actividades terminadas" value={totales.intentos} accent="var(--teal)" />
+        <StatCard label="Aciertos" value={totales.intentos ? `${totales.porcentajeAciertos}%` : '—'} accent="var(--sun)" />
       </div>
 
-      <div className="panel-grid">
-        {misCursos.map((c) => (
-          <div key={c.id} className="panel">
-            <h3 className="panel-title" style={{ color: c.color }}>
-              {c.nombre}
-            </h3>
-            <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
-              {ESTUDIANTES.length} estudiantes · Promedio actual {promedioCurso(c.id).toFixed(1)}
-            </p>
-          </div>
-        ))}
-      </div>
+      <GraficasResumen resumen={datos} />
     </div>
   );
 }
