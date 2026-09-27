@@ -13,8 +13,8 @@ vi.mock('../src/services/usuariosService', () => ({
 }));
 
 const usuarios = [
-  { id: 1, nombreCompleto: 'Admin Local', usuario: 'admin.test', activo: true, creadoEn: '2026-09-01T00:00:00Z', rol: { id: 1, nombreRol: 'administrador' } },
-  { id: 2, nombreCompleto: 'Ana Docente', usuario: 'ana.docente', activo: true, creadoEn: '2026-09-02T00:00:00Z', rol: { id: 2, nombreRol: 'docente' } },
+  { id: 1, nombreCompleto: 'Admin Local', usuario: 'admin.test', activo: true, creadoEn: '2026-09-01T00:00:00Z', rol: 'administrador' },
+  { id: 2, nombreCompleto: 'Ana Docente', usuario: 'ana.docente', activo: true, creadoEn: '2026-09-02T00:00:00Z', rol: 'docente' },
 ];
 
 const fila = (texto) => screen.getByText(texto).closest('tr');

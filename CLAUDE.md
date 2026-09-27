@@ -62,7 +62,7 @@ Roles on the backend are stored lowercase (`administrador`, `docente`, `estudian
 - `apiClient.jsx`: added a module-level, in-memory-only `accessToken` holder (`setAccessToken` export — never `localStorage`, per the security requirement below) plus a request interceptor that attaches `Authorization: Bearer <token>` when one is set.
 - `AuthContext.jsx`: calls `setAccessToken(...)` after a successful `login()` and after a successful `refresh()` in `restoreSession()`; calls `setAccessToken(null)` in `logout()`.
 
-**Minor, not blocking:** field-shape mismatch between `POST /api/auth/login`'s `usuario: {id, nombre, rol}` (flat string `rol`) and `GET /api/usuarios/me`'s `{nombreCompleto, usuario, rol: {id, nombreRol}}` — already handled correctly by manual mapping in both places in `AuthContext.jsx`, but worth aligning with Antony later so this class of bug doesn't recur.
+**`rol` shape — resolved 2026-09-27:** `POST /api/auth/login` used to send `rol` as a string while `GET /api/usuarios/me` (and `GET /api/usuarios`) sent `{id, nombreRol}`. The backend now sends the role name as a **string everywhere**, same as the JWT and the create/update bodies. The frontend reads `rol` through `nombreRol()` (`src/utils/rol.js`), which also accepts the old object shape so deploy order between the two repos doesn't matter — use it for any `rol` coming from the API instead of `.rol.nombreRol`.
 
 **Cleanup done (2026-09-26):** the old commented-out AuthContext (with the stale `hasPermission`) is gone; `npm run lint` is clean and now runs in `ci.yml`.
 
@@ -106,11 +106,12 @@ Shared dashboard UI pieces (`StatCard`, `Badge`, and `widgets.css` with `.panel`
 
 ## Original project spec vs. what's actually built
 
-The project's original planning doc (from Brandon/architect) describes a different target than what exists in this repo today. Treat the items below as **not yet implemented** — don't assume TypeScript types, Tailwind classes, Cypress tests, or an activities-based student flow exist just because they're referenced in planning materials.
+The project's original planning doc (from Brandon/architect) describes a different target than what exists in this repo. **This repo is the source of truth**; the items below record where it diverged so nobody builds from the spec's names. Updated 2026-09-27.
 
-- **Stack:** spec calls for TypeScript (strict, no `any`) + Tailwind CSS + Cypress E2E, deployed to Vercel/Netlify. Actual: plain JS/JSX, plain CSS, no test runner, deployed to GitHub Pages.
-- **Student flow:** spec describes an activities-based flow (`estudiante/SeleccionModulo`, `Actividad`, `Resultado` — pick a module, do an interactive activity, see a result) with a docente-side activity builder (`docente/CrearActividad`, max 10 questions per activity). Actual: this repo implements a grades/reports **dashboard** (courses, `NOTAS` grade matrix, KPI/report views) for all three roles — there's no activity-taking or activity-authoring UI yet. Confirm with the team whether the dashboard is a first phase alongside the activities flow, or a pivot away from it, before building either further.
-- **Folder/file naming:** spec uses PascalCase `.tsx` files (`Login.tsx`, `AppLayout.tsx`, `ProtectedRoute.tsx`/`RoleRoute.tsx`). Actual repo uses lowercase `.jsx` (`login.jsx`, `DashboardLayout.jsx`, `PrivateRoute.jsx`) with a single `PrivateRoute` handling both "is authenticated" and "has role" checks instead of two separate route wrappers.
+- **Stack:** spec calls for TypeScript (strict, no `any`) + Tailwind CSS + Cypress E2E, deployed to Vercel/Netlify. Actual: plain JS/JSX, plain CSS, Vitest + Cypress E2E (see "Commands"), deployed to GitHub Pages.
+- **Student flow:** implemented (Módulo 3), but it is **not** an `estudiante` role area. The page files live in `src/pages/estudiante/` (`AccesoGrupo.jsx`, `SeleccionModulo.jsx`, `Actividad.jsx`, `Resultado.jsx`), but the routes are `/grupo`, `/grupo/modulos[/:idModulo]`, `/grupo/actividad/:idActividad` and `/grupo/resultado` — there is no `/estudiante/*` route. Session state is `GrupoContext` (not `AuthContext`), gated by `GrupoRoute` (not `PrivateRoute`), and requests go through `grupoClient` (a separate axios instance, not `apiClient`). Details under "Módulo 3" below. The spec's `docente/CrearActividad` is `docente/ActividadesDocente.jsx` (catalog + editor, max 10 questions).
+- **Route guards:** the spec's two wrappers `ProtectedRoute` + `RoleRoute` **don't exist and won't be added**. `src/routes/PrivateRoute.jsx` does both checks (not authenticated → `/`, wrong role → `/no-autorizado`; `allowedRoles` takes an array, e.g. `allowedRoles={['docente']}`) for docente/admin, and `src/routes/GrupoRoute.jsx` guards the kids' `/grupo/*` routes. Don't reintroduce the split.
+- **Folder/file naming:** spec uses PascalCase `.tsx` files (`Login.tsx`, `AppLayout.tsx`). Actual repo uses `.jsx`, with some lowercase page files (`login.jsx`, `admin.jsx`, `docente.jsx`) and PascalCase for the rest (`DashboardLayout.jsx`, `PrivateRoute.jsx`).
 
 ### Real auth model (planned, not implemented)
 
@@ -172,14 +173,14 @@ Decisions confirmed: **one access code per group** (no individual PINs), and act
 
 **API contract (implemented):**
 ```
-POST /api/auth/grupo-login              [public]       {codigo_acceso} → {token, grupo}
+POST /api/auth/grupo-login              [public]       {codigoAcceso} → {token, grupo}
 GET  /api/grupo/me/actividades          [grupo token]  modules → activities (completada, mejorPuntaje)
 GET  /api/grupo/me/avance               [grupo token]
 GET  /api/actividades/:id/preguntas     [grupo token]  no correct answers
 POST /api/actividades/:id/respuestas    [grupo token]  {respuestas:[{idPregunta, respuesta}]} → {puntaje, puntajeTotal, porcentajeModulo, detalle[]}
 
 POST   /api/grupos | GET /api/docentes/me/grupos | PUT /api/grupos/:id/regenerar-codigo | DELETE /api/grupos/:id   [docente]
-GET    /api/docentes/me/resultados?id_grupo=     [docente]
+GET    /api/docentes/me/resultados?idGrupo=      [docente]
 GET    /api/modulos                              [docente, admin]
 GET    /api/docentes/me/actividades              [docente]
 GET/PUT/DELETE /api/actividades/:id, POST /api/actividades   [docente]
@@ -210,18 +211,18 @@ Closes the reports flow that was a placeholder since Módulo 2. Full scope doc: 
 
 **API contract (implemented in the backend):**
 ```
-GET  /api/reportes/vista-previa?id_seccion=&id_modulo=   [admin, docente]  both params required
+GET  /api/reportes/vista-previa?idSeccion=&idModulo=     [admin, docente]  both params required
   → { seccion{id,nombreSeccion,grado}, modulo{id,nombreModulo,icono}, hayResultados,
       totales{grupos,intentos,promedioPuntaje},
       grupos[{idGrupo,nombreGrupo,activo,intentos,promedioPuntaje,actividadesCompletadas,actividadesDisponibles,ultimoIntento}],
       mejorGrupo{idGrupo,nombreGrupo,promedioPuntaje}|null, peorGrupo|null (null unless ≥2 groups have attempts) }
-GET  /api/reportes/export?id_seccion=&id_modulo=         [admin, docente]  CSV: id_grupo,grupo,grado,seccion,modulo,actividad,puntaje,puntaje_total,porcentaje,fecha
+GET  /api/reportes/export?idSeccion=&idModulo=           [admin, docente]  CSV: id_grupo,grupo,grado,seccion,modulo,actividad,puntaje,puntaje_total,porcentaje,fecha
 POST /api/reportes                                       [docente]         body camelCase {idSeccion, idModulo, urlPdf} → 201 Reporte
-GET  /api/reportes?id_seccion=&id_modulo=                [admin, docente]  Reporte[] newest first
+GET  /api/reportes?idSeccion=&idModulo=                  [admin, docente]  Reporte[] newest first
 GET  /api/reportes/:id                                   [admin, docente]  Reporte (404 for another docente's)
 Reporte = { id, urlPdf, generadoEn, seccion{id,nombreSeccion,grado}, modulo{id,nombreModulo}, docente{id,nombreCompleto} }
 ```
-Gotchas: `promedioPuntaje` is a 0–100 percentage. In `/api/reportes` responses `seccion.grado` is a **string**, while `/api/secciones` and `/api/docentes/me/grupos` send it as an object — `formato.etiquetaSeccion` handles both. Query params stay snake_case (`id_seccion`), bodies are camelCase like the rest of the API (the scope doc's snake_case body was dropped).
+Gotchas: `promedioPuntaje` is a 0–100 percentage. In `/api/reportes` responses `seccion.grado` is a **string**, while `/api/secciones` and `/api/docentes/me/grupos` send it as an object — `formato.etiquetaSeccion` handles both. Since 2026-09-27 **everything is camelCase** — bodies, responses and query params (`?idSeccion=`, `?idGrado=`, `{codigoAcceso}`); the backend still accepts the old snake_case names as aliases, but the frontend only sends camelCase. The only snake_case left is the Colab CSV header (the notebook depends on it).
 
 **Usage flow:** filter → vista previa → Exportar CSV → run the notebook in Colab (outside the platform) → upload PDF to Drive → paste link in "Registrar reporte" → appears in the historial.
 

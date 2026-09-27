@@ -16,7 +16,7 @@ class SeccionesService {
   async listarSecciones(idGrado) {
     try {
       const response = await apiClient.get('/api/secciones', {
-        params: idGrado ? { id_grado: idGrado } : {},
+        params: idGrado ? { idGrado } : {},
       });
       return { success: true, data: response.data };
     } catch (err) {

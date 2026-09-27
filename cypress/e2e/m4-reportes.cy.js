@@ -79,7 +79,7 @@ describe('Módulo 4 — reportes por sección y módulo', () => {
   // Varios tests piden la misma URL: sin If-None-Match el navegador no usa su
   // caché y la respuesta es siempre 200 con body, nunca 304.
   const abrirReporte = (rol, modulo) => {
-    const query = { id_seccion: String(ctx.seccion.id), id_modulo: String(modulo.id) };
+    const query = { idSeccion: String(ctx.seccion.id), idModulo: String(modulo.id) };
     const sinCache = (req) => delete req.headers['if-none-match'];
     cy.intercept({ method: 'GET', url: rutaApi('/api/reportes/vista-previa*'), query }, sinCache).as('vistaPrevia');
     cy.intercept({ method: 'GET', url: rutaApi('/api/reportes?*'), query }, sinCache).as('historial');
@@ -178,8 +178,8 @@ describe('Módulo 4 — reportes por sección y módulo', () => {
     // M4-06: solo los reportes de esta sección y módulo.
     cy.wait('@historial').then(({ request, response }) => {
       const url = new URL(request.url);
-      expect(url.searchParams.get('id_seccion')).to.eq(String(ctx.seccion.id));
-      expect(url.searchParams.get('id_modulo')).to.eq(String(ctx.matematica.id));
+      expect(url.searchParams.get('idSeccion')).to.eq(String(ctx.seccion.id));
+      expect(url.searchParams.get('idModulo')).to.eq(String(ctx.matematica.id));
       response.body.forEach((r) => {
         expect(r.seccion.id).to.eq(ctx.seccion.id);
         expect(r.modulo.id).to.eq(ctx.matematica.id);
@@ -201,7 +201,7 @@ describe('Módulo 4 — reportes por sección y módulo', () => {
 
   it('Permisos: el docente no puede ver ni registrar reportes de una sección sin grupos suyos', () => {
     cy.token('docente').then((token) => {
-      const query = `id_seccion=${ctx.seccionAjena.id}&id_modulo=${ctx.matematica.id}`;
+      const query = `idSeccion=${ctx.seccionAjena.id}&idModulo=${ctx.matematica.id}`;
       cy.api(token, 'GET', `/api/reportes/vista-previa?${query}`, undefined, { failOnStatusCode: false })
         .its('status')
         .should('eq', 403);

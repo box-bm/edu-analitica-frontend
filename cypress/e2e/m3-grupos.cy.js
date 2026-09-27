@@ -99,7 +99,7 @@ describe('Módulo 3 — grupos y actividades de los niños', () => {
       cy.get('#codigo-grupo').type(`${grupo.codigoAcceso.slice(0, 3).toLowerCase()}-${grupo.codigoAcceso.slice(3)}`);
       cy.contains('button', '¡Entrar!').click();
       cy.wait('@entrar').then(({ request, response }) => {
-        expect(request.body.codigo_acceso).to.eq(grupo.codigoAcceso);
+        expect(request.body.codigoAcceso).to.eq(grupo.codigoAcceso);
         expect(response.statusCode).to.eq(200);
         expect(response.body.token).to.be.a('string');
       });
@@ -134,7 +134,7 @@ describe('Módulo 3 — grupos y actividades de los niños', () => {
             cy.get('.resultado-card [role=img]').should('have.attr', 'aria-label', '3 de 3 estrellas');
 
             // El resultado queda a nombre de ESTE grupo.
-            cy.api(ctx.tokenDocente, 'GET', `/api/docentes/me/resultados?id_grupo=${grupo.id}`).then(({ body }) => {
+            cy.api(ctx.tokenDocente, 'GET', `/api/docentes/me/resultados?idGrupo=${grupo.id}`).then(({ body }) => {
               expect(body.some((r) => r.actividad.id === idActividad && r.puntaje === total)).to.eq(true);
               body.forEach((r) => expect(r.grupo.id).to.eq(grupo.id));
             });
@@ -173,7 +173,7 @@ describe('Módulo 3 — grupos y actividades de los niños', () => {
         cy.contains('[role=status]', nuevo);
         cy.contains('.grupo-card', grupo.nombreGrupo).find('.codigo-grande').should('have.text', nuevo);
 
-        cy.api(null, 'POST', '/api/auth/grupo-login', { codigo_acceso: grupo.codigoAcceso }, { failOnStatusCode: false })
+        cy.api(null, 'POST', '/api/auth/grupo-login', { codigoAcceso: grupo.codigoAcceso }, { failOnStatusCode: false })
           .its('status')
           .should('eq', 401);
         entrarGrupo(nuevo).should('be.a', 'string');

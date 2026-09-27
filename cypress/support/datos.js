@@ -52,7 +52,7 @@ export function crearGrupo(tokenDocente, idSeccion, nombre = `E2E Grupo ${uid()}
 }
 
 export function entrarGrupo(codigo) {
-  return cy.api(null, 'POST', '/api/auth/grupo-login', { codigo_acceso: codigo }).its('body.token');
+  return cy.api(null, 'POST', '/api/auth/grupo-login', { codigoAcceso: codigo }).its('body.token');
 }
 
 // Primera actividad de un módulo, vista desde la sesión del grupo.
