@@ -26,8 +26,31 @@ npm run dev                                          # http://localhost:5173/edu
 | `npm run preview` | Sirve el build localmente. |
 | `npm run lint` | ESLint. |
 | `npm test` | Tests (sin red ni backend). |
+| `npm run e2e` | Tests E2E con Cypress contra el sistema real (ver abajo). |
+| `npm run e2e:open` | Lo mismo, con la interfaz de Cypress. |
 
 Requiere Node `>=22.22.2`.
+
+## Tests E2E (Cypress)
+
+Recorren la app real (frontend + backend + base de datos) siguiendo la matriz de pruebas del proyecto: un spec por módulo en `cypress/e2e/` (`m1-auth`, `m2-admin`, `m2-actividades`, `m3-grupos`, `m4-reportes`). Cada test indica en su nombre el ID de la matriz (M1-01, M3-06…).
+
+1. Copia `cypress.env.example.json` a `cypress.env.json` (está en `.gitignore`) y pon un usuario admin y uno docente reales. Conviene un docente dedicado a pruebas: los tests crean grupos y resultados con él.
+2. Elige contra qué correr:
+
+```bash
+# Contra el deploy (GitHub Pages + Railway)
+E2E_BASE_URL=https://box-bm.github.io/edu-analitica-frontend/ \
+E2E_API_URL=https://edu-analitica-backend-production.up.railway.app \
+npm run e2e
+
+# Contra local: primero `npm run dev` con VITE_API_URL apuntando al backend local
+E2E_API_URL=http://localhost:3000 npm run e2e
+```
+
+- Los datos que crean los tests llevan el prefijo **E2E** y se desactivan al terminar cada spec (soft delete). Los links de reportes de Módulo 4 no se pueden borrar: quedan en una sección E2E inactiva.
+- El backend permite **5 logins por IP cada 15 minutos**. Los tests reutilizan la sesión de admin y docente (la cookie de refresh se guarda en `cypress/.sesiones.json`, ignorado por git), así que una corrida gasta 3 logins (los de las pruebas de login en `m1-auth`). Si sale un 429, espera 15 minutos.
+- El grado que usan los tests necesita al menos dos módulos con actividades del catálogo (`npm run seed:actividades` en el backend).
 
 ## Cómo se usa
 
