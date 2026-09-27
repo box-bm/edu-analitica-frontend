@@ -1,5 +1,6 @@
-// Datos mock del colegio. Todo lo que se ve en Admin/Docente/Estudiante
-// sale de esta misma fuente para que la información se relacione entre roles.
+// Datos mock del colegio para los tableros de Admin/Docente que aún no tienen
+// endpoint real (Inicio, Cursos, Estudiantes, Reportes, Usuarios). Todo sale de
+// esta misma fuente para que la información se relacione entre roles.
 
 export const PERIODOS = ['Periodo 1', 'Periodo 2', 'Periodo 3'];
 
@@ -36,13 +37,10 @@ export const NOTAS = {
   8: { mat: [3.3, 3.4, 3.2], idi: [3.2, 3.3, 3.5], cie: [3.4, 3.3, 3.5], his: [3.3, 3.4, 3.4] },
 };
 
-// El "estudiante" con el que inicia sesión el usuario Estudiante de la demo.
-export const ESTUDIANTE_ACTUAL_ID = 1;
-
 const round1 = (n) => Math.round(n * 10) / 10;
 const promedio = (arr) => round1(arr.reduce((a, b) => a + b, 0) / arr.length);
 
-export function promedioEstudianteCurso(estudianteId, cursoId) {
+function promedioEstudianteCurso(estudianteId, cursoId) {
   return promedio(NOTAS[estudianteId][cursoId]);
 }
 

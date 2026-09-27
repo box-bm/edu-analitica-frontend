@@ -9,7 +9,6 @@ const COLORES_MENU = ['var(--orange)', 'var(--teal)', 'var(--sun)', 'var(--grape
 const ETIQUETA_ROL = {
   administrador: 'Administración',
   docente: 'Docente',
-  estudiante: 'Estudiante',
 };
 
 function iniciales(nombre = '') {

@@ -7,7 +7,6 @@ import GrupoRoute from './routes/GrupoRoute';
 import Login from './pages/login';
 import Admin from './pages/admin';
 import Docente from './pages/docente';
-import Estudiante from './pages/estudiante';
 import NoAutorizado from './pages/NoAutorizado';
 import NotFound from './pages/NotFound';
 import AccesoGrupo from './pages/estudiante/AccesoGrupo';
@@ -22,8 +21,6 @@ function RutaInicio() {
 
   if (isAuthenticated) {
     switch (user.rol) {
-      case 'estudiante':
-        return <Navigate to="/estudiante" replace />;
       case 'docente':
         return <Navigate to="/docente" replace />;
       case 'administrador':
@@ -40,15 +37,6 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<RutaInicio />} />
-
-      <Route
-        path="/estudiante"
-        element={
-          <PrivateRoute allowedRoles={['estudiante']}>
-            <Estudiante />
-          </PrivateRoute>
-        }
-      />
 
       <Route
         path="/docente"

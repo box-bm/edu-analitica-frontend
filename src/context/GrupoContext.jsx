@@ -6,7 +6,6 @@ import { onGrupoSesionExpirada, setGrupoToken } from '../services/grupoClient';
 // no hay refresh ni cookie; si el token vence, se vuelve a pedir el código.
 const GrupoContext = createContext(null);
 
-// Mismo patrón que AuthContext (hook + provider en un archivo).
 // eslint-disable-next-line react-refresh/only-export-components
 export const useGrupo = () => {
   const context = useContext(GrupoContext);

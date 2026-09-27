@@ -60,19 +60,19 @@ Roles on the backend are stored lowercase (`administrador`, `docente`, `estudian
 
 **Minor, not blocking:** field-shape mismatch between `POST /api/auth/login`'s `usuario: {id, nombre, rol}` (flat string `rol`) and `GET /api/usuarios/me`'s `{nombreCompleto, usuario, rol: {id, nombreRol}}` — already handled correctly by manual mapping in both places in `AuthContext.jsx`, but worth aligning with Antony later so this class of bug doesn't recur.
 
-**Still open, low priority:** delete the commented-out `MOCK_USERS` block in `userService.jsx` (dead code, no longer needed as reference). `hasPermission` in `AuthContext.jsx` references role names (`Alumno`, `Catedratico`) that don't match the actual roles used elsewhere (`Estudiante`, `Docente`, `Admin`) and isn't called anywhere — treat it as stale/unused.
+**Cleanup done (2026-09-26):** the old commented-out AuthContext (with the stale `hasPermission`) is gone; `npm run lint` is clean and now runs in `ci.yml`.
 
 ### Routing and role gating
 
-`App.jsx` defines all routes and wraps role-specific ones in `PrivateRoute` (`src/routes/PrivateRoute.jsx`), which redirects to `/` if not authenticated or `/no-autorizado` if the role doesn't match. The root route `/` renders `Login` unless already authenticated, in which case it redirects by role. Role → route mapping (`Estudiante → /estudiante`, `Docente → /docente`, `Admin → /admin`) is duplicated in both `login.jsx` (`redirigirPorRol`) and `App.jsx` (`RutaInicio`) — update both if roles or routes change.
+`App.jsx` defines all routes and wraps role-specific ones in `PrivateRoute` (`src/routes/PrivateRoute.jsx`), which redirects to `/` if not authenticated or `/no-autorizado` if the role doesn't match. The root route `/` renders `Login` unless already authenticated, in which case it redirects by role. Role → route mapping (`docente → /docente`, `administrador → /admin`) is duplicated in both `login.jsx` (`redirigirPorRol`) and `App.jsx` (`RutaInicio`) — update both if roles or routes change. There is no `estudiante` route anymore: students enter through `/grupo` (Módulo 3).
 
 Even once real auth lands, the backend must be treated as the source of truth for authorization — the frontend role check (hiding a route/button) is UX only, never a security boundary.
 
-### Dashboard pattern (admin/docente/estudiante)
+### Dashboard pattern (admin/docente)
 
-Each role has a thin top-level page (`src/pages/admin.jsx`, `docente.jsx`, `estudiante.jsx`) that builds a `menuItems` array of `{ label, icon, content }` and renders `<DashboardLayout menuItems={...} />`. `DashboardLayout` (`src/components/DashboardLayout.jsx`) owns the sidebar/topbar chrome and just renders the `content` of whichever item is selected — it has no knowledge of what each section contains. Section content itself lives in per-role subfolders (`src/pages/admin/*`, `src/pages/docente/*`, `src/pages/estudiante/*`), one component per menu item.
+Each role has a thin top-level page (`src/pages/admin.jsx`, `docente.jsx`) that builds a `menuItems` array of `{ label, icon, content }` and renders `<DashboardLayout menuItems={...} />`. `DashboardLayout` (`src/components/DashboardLayout.jsx`) owns the sidebar/topbar chrome and just renders the `content` of whichever item is selected — it has no knowledge of what each section contains. Section content itself lives in per-role subfolders (`src/pages/admin/*`, `src/pages/docente/*`), one component per menu item. `src/pages/estudiante/*` now holds only the Módulo 3 group flow, which uses `GrupoLayout`, not `DashboardLayout`.
 
-Shared dashboard UI pieces (`StatCard`, `Badge`, and `widgets.css` with `.panel`, `.kpi-grid`, `.data-table`, `.dashboard-form`, etc.) live in `src/components/dashboard/` and are reused across all three roles' sections.
+Shared dashboard UI pieces (`StatCard`, `Badge`, and `widgets.css` with `.panel`, `.kpi-grid`, `.data-table`, `.dashboard-form`, etc.) live in `src/components/dashboard/` and are reused across the admin and docente sections.
 
 ### Mock data layer
 
@@ -177,7 +177,7 @@ GET    /api/docentes/me/actividades              [docente]
 GET/PUT/DELETE /api/actividades/:id, POST /api/actividades   [docente]
 ```
 
-**Not done / still mock:** the docente `Inicio`/`Cursos`/`Estudiantes`/`Reportes` tabs and all admin dashboards still read `mockData.js`. The old `/estudiante` dashboard is untouched and unreachable in practice (no `estudiante` accounts exist; students use `/grupo`) — candidate for removal once the team agrees.
+**Not done / still mock:** the docente `Inicio`/`Cursos`/`Estudiantes`/`Reportes` tabs and all admin dashboards still read `mockData.js`. The old `/estudiante` grades dashboard (and its mock-only pages) was **removed** on 2026-09-26: no `estudiante` accounts can exist on the backend, so it was unreachable. Unused template assets (`App.css`, `hero.png`, `react.svg`, `vite.svg`, `public/icons.svg`) and the now-unused `logo2.png` were removed too. Note `UsuariosAdmin.jsx` still lists mock users (not `/api/usuarios`).
 
 ### Real integration: auth against the live backend — done
 

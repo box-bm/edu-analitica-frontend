@@ -23,9 +23,6 @@ function Login() {
 
   const redirigirPorRol = (rol) => {
     switch (rol) {
-      case 'estudiante':
-        navigate('/estudiante');
-        break;
       case 'docente':
         navigate('/docente');
         break;
