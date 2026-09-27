@@ -187,7 +187,7 @@ GET/PUT/DELETE /api/actividades/:id, POST /api/actividades   [docente]
 
 **Mock data is gone** — see "Data layer: real API only" above. The old `/estudiante` grades dashboard (and its mock-only pages) was **removed** on 2026-09-26: no `estudiante` accounts can exist on the backend, so it was unreachable. Unused template assets (`App.css`, `hero.png`, `react.svg`, `vite.svg`, `public/icons.svg`) and the now-unused `logo2.png` were removed too.
 
-### Módulo 4: Reportes — scoped (2026-09-27), not implemented yet
+### Módulo 4: Reportes — frontend built on `feat/modulo-4-reportes` (2026-09-27), backend endpoints not implemented yet
 
 Closes the reports flow that was a placeholder since Módulo 2. Full scope doc: `alcance-modulo4-reportes.md`. Goals: (1) export results per group/sección as CSV for manual analysis in Colab, (2) register the link of the externally generated PDF (Colab → Google Drive) as a "reporte" in the platform, (3) show an always-available **vista previa** of basic stats computed by the backend (no dependency on Colab), (4) let the docente open the final report.
 
@@ -199,6 +199,27 @@ Closes the reports flow that was a placeholder since Módulo 2. Full scope doc: 
 - **"Exportar CSV"** → `GET /api/reportes/export`, same blob download pattern as the current CSV (`responseType: 'blob'`, filename from `Content-Disposition`). Expected columns: id_grupo, sección, actividad, puntaje, fecha.
 - **"Registrar reporte"** form: paste the Drive link, tied to the selected sección/módulo → `POST /api/reportes`. Validate client-side that it's a well-formed http(s) URL (the backend validates with Zod too — surface its 400 message). Don't require it to be a Drive URL.
 - **Historial**: table with fecha, sección, módulo and an "Abrir PDF" button, newest first, filtered by sección/módulo. The link opens in a new tab (`target="_blank" rel="noopener noreferrer"`) — never embed the PDF in an iframe (Drive permissions make that painful).
+
+**Frontend implementation (branch `feat/modulo-4-reportes`, not validated against a real backend yet — the endpoints don't exist):**
+- `ReportesDocente.jsx` now has a view switch: "Por sección y módulo" (Módulo 4, default) and "Aciertos por actividad" (the existing `ReporteActividades`, unchanged; admin's `Reportes` tab is untouched).
+- `src/pages/docente/reportes/`: `ReportesSeccion` (filters; sección options are derived from the docente's own groups via `GET /api/docentes/me/grupos`, i.e. the strict ownership default; módulos from `GET /api/modulos` filtered to the sección's grado; defaults to the first of each), `PanelReporte` (mounted with `key` per filter; preview + export + register + history), `VistaPrevia`, `RegistrarReporte`, `HistorialReportes`, `formato.js`.
+- `src/utils/urlPdf.js` (`esUrlPdfValida`): http(s) only, ≤500 chars. Used before POSTing **and** when rendering the history — a stored non-http link is shown as "Link no válido", never as an `<a>`.
+- `reportesService`: `vistaPrevia`, `exportarCsv`, `historial`, `registrar` (+ a shared blob-download helper also used by the old `descargarCsv`). No `detalle(id)` yet — the history rows already carry `urlPdf`.
+- Tests: `tests/ReportesSeccion.test.jsx`, `tests/urlPdf.test.js`.
+
+**Response shapes the frontend assumes (proposed — the scope doc doesn't define them; the backend should match or this must be updated):**
+```
+GET /api/reportes/vista-previa →
+  { totales: { grupos, actividades, intentos, porcentajePromedio },      // porcentajes 0–100, enteros
+    grupos: [{ idGrupo, nombreGrupo, actividadesCompletadas, intentos, porcentajePromedio }],
+    mejorGrupo: { idGrupo, nombreGrupo, porcentajePromedio } | null,
+    peorGrupo:  { idGrupo, nombreGrupo, porcentajePromedio } | null }
+  empty state = totales.intentos === 0 (still 200, not 404)
+GET /api/reportes → [{ id, idSeccion, idModulo, urlPdf, generadoEn,
+                       seccion: { id, nombreSeccion, grado: { nombreGrado } }, modulo: { id, nombreModulo } }]
+POST /api/reportes body is snake_case { id_seccion, id_modulo, url_pdf } as the scope doc says — note the other
+POST bodies in this API are camelCase (e.g. grupos: { idSeccion, nombreGrupo }); pick one with the backend.
+```
 
 **Usage flow:** filter → see vista previa → Exportar CSV → run the notebook in Colab (outside the platform) → upload PDF to Drive → paste link in "Registrar reporte" → it shows up in the historial.
 

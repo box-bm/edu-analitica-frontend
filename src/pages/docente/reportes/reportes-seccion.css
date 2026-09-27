@@ -1,0 +1,51 @@
+/* Reportes por sección (Módulo 4). */
+
+.pila-reportes {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.pila-reportes > .panel + .panel {
+  margin-top: 0;
+}
+
+.pasos-reporte {
+  margin: 0 0 1.25rem;
+  padding-left: 1.3rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+a.btn-secondary {
+  text-decoration: none;
+}
+
+/* Selector de vista en la pestaña Reportes del docente. */
+.selector-vista {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  margin-bottom: 1.5rem;
+  border-radius: 999px;
+  background: var(--paper-deep);
+}
+
+.selector-vista button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.5rem 1.1rem;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--ink-soft);
+  background: transparent;
+  cursor: pointer;
+}
+
+.selector-vista button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+}
