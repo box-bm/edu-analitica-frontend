@@ -76,10 +76,13 @@ describe('Módulo 4 — reportes por sección y módulo', () => {
   // Abre Reportes con la sección E2E y el módulo pedido.
   // Los alias solo capturan las peticiones de ese filtro (al abrir la pestaña
   // primero se carga la sección y el módulo por defecto).
+  // Varios tests piden la misma URL: sin If-None-Match el navegador no usa su
+  // caché y la respuesta es siempre 200 con body, nunca 304.
   const abrirReporte = (rol, modulo) => {
     const query = { id_seccion: String(ctx.seccion.id), id_modulo: String(modulo.id) };
-    cy.intercept({ method: 'GET', url: rutaApi('/api/reportes/vista-previa*'), query }).as('vistaPrevia');
-    cy.intercept({ method: 'GET', url: rutaApi('/api/reportes?*'), query }).as('historial');
+    const sinCache = (req) => delete req.headers['if-none-match'];
+    cy.intercept({ method: 'GET', url: rutaApi('/api/reportes/vista-previa*'), query }, sinCache).as('vistaPrevia');
+    cy.intercept({ method: 'GET', url: rutaApi('/api/reportes?*'), query }, sinCache).as('historial');
     cy.visitarComo(rol, rol === 'admin' ? '/admin' : '/docente');
     cy.irA('Reportes');
     cy.contains('label', 'Sección').find('select').select(String(ctx.seccion.id));
