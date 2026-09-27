@@ -44,7 +44,8 @@ export default defineConfig({
     requestTimeout: 15000,
     viewportWidth: 1366,
     viewportHeight: 768,
-    video: false,
+    // Un video por spec en cypress/videos (gitignored; se borran al empezar cada corrida).
+    video: true,
     setupNodeEvents(on) {
       on('task', {
         leerSesion: (clave) => leerSesiones()[clave] ?? null,

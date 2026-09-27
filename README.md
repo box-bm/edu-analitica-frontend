@@ -50,9 +50,10 @@ npm run dev:e2e        # backend en :3000 contra la rama e2e
 
 ```bash
 npm run e2e:serve      # build de producción en modo e2e (API en http://localhost:3000, .env.e2e) servido en :5173
-npm run e2e            # o npm run e2e:open
+npm run e2e            # sin ventana; npm run e2e:headed para verlo en Chrome, npm run e2e:open para la app de Cypress
 ```
 
+- Cada corrida deja un video por spec en `cypress/videos/` (ignorado por git) y capturas de los tests que fallan en `cypress/screenshots/`.
 - Los datos que crean los tests llevan el prefijo **E2E** y se desactivan al terminar cada spec (soft delete). Los links de reportes de Módulo 4 no se pueden borrar: quedan en una sección E2E inactiva.
 - El backend permite **5 logins por IP cada 15 minutos**. Los tests reutilizan la sesión de admin y docente (la cookie de refresh se guarda en `cypress/.sesiones.json`, ignorado por git), así que una corrida gasta 3 logins (los de las pruebas de login en `m1-auth`). Si sale un 429, reinicia el backend local (el contador vive en memoria).
 - `db:e2e:reset` / `seed:e2e` ya dejan un grado con dos módulos o más con actividades del catálogo, que es lo que necesitan los tests.

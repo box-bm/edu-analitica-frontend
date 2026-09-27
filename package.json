@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "cypress run",
+    "e2e:headed": "cypress run --headed --browser chrome",
     "e2e:open": "cypress open"
   },
   "dependencies": {
