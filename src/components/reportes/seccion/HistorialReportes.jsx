@@ -31,6 +31,7 @@ export default function HistorialReportes({ datos, error, cargando, recargar }) 
           <th>Fecha</th>
           <th>Sección</th>
           <th>Módulo</th>
+          <th>Registrado por</th>
           <th></th>
         </tr>
       </thead>
@@ -40,6 +41,7 @@ export default function HistorialReportes({ datos, error, cargando, recargar }) 
             <td>{fechaReporte.format(new Date(r.generadoEn))}</td>
             <td>{r.seccion ? etiquetaSeccion(r.seccion) : '—'}</td>
             <td>{r.modulo?.nombreModulo ?? '—'}</td>
+            <td>{r.docente?.nombreCompleto ?? '—'}</td>
             <td>
               {/* Segunda barrera ante un link no http(s) guardado: no se renderiza como enlace. */}
               {esUrlPdfValida(r.urlPdf) ? (

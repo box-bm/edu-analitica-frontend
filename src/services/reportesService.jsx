@@ -83,11 +83,7 @@ class ReportesService {
   // Solo se registra el link (Drive): el PDF nunca se sube a la plataforma.
   async registrar({ idSeccion, idModulo, urlPdf }) {
     try {
-      const response = await apiClient.post('/api/reportes', {
-        id_seccion: idSeccion,
-        id_modulo: idModulo,
-        url_pdf: urlPdf,
-      });
+      const response = await apiClient.post('/api/reportes', { idSeccion, idModulo, urlPdf });
       return { success: true, data: response.data };
     } catch (err) {
       return error(err, 'No se pudo registrar el reporte');

@@ -1,10 +1,6 @@
-import useCarga from '../../hooks/useCarga';
-import ReporteActividades from '../../components/reportes/ReporteActividades';
-import seccionesService from '../../services/seccionesService';
+import Reportes from '../../components/reportes/Reportes';
 
-const cargarGrados = () => seccionesService.listarGradosConSecciones();
-
+// Admin lee todos los reportes pero no registra PDFs (src/utils/permisos.js).
 export default function ReportesAdmin() {
-  const { datos: grados } = useCarga(cargarGrados);
-  return <ReporteActividades grados={grados ?? []} />;
+  return <Reportes />;
 }

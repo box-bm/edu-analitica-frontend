@@ -1,5 +1,6 @@
-import StatCard from '../../../components/dashboard/StatCard';
-import '../../../components/reportes/reportes.css';
+import StatCard from '../../dashboard/StatCard';
+import { fechaReporte } from './formato';
+import '../reportes.css';
 
 // Mismos umbrales que src/utils/estrellas.js y el backend.
 const nivelClase = (p) => (p >= 90 ? 'alto' : p >= 60 ? 'medio' : 'inicial');
@@ -17,7 +18,7 @@ export default function VistaPrevia({ datos, error, cargando, recargar }) {
     );
   }
 
-  if (datos.totales.intentos === 0) {
+  if (!datos.hayResultados) {
     return (
       <div className="estado-vacio">
         <span className="estado-emoji">📊</span>
@@ -28,30 +29,28 @@ export default function VistaPrevia({ datos, error, cargando, recargar }) {
   }
 
   const { totales, grupos, mejorGrupo, peorGrupo } = datos;
-  // Con un solo grupo, "mejor" y "a reforzar" serían el mismo: no se muestran.
-  const comparar = mejorGrupo && peorGrupo && mejorGrupo.idGrupo !== peorGrupo.idGrupo;
 
   return (
     <>
       <div className="kpi-grid">
-        <StatCard label="Promedio de aciertos" value={`${totales.porcentajePromedio}%`} accent="var(--teal)" />
+        <StatCard label="Promedio de aciertos" value={`${totales.promedioPuntaje}%`} accent="var(--teal)" />
         <StatCard label="Intentos" value={totales.intentos} accent="var(--orange)" />
         <StatCard label="Grupos" value={totales.grupos} accent="var(--grape)" />
-        <StatCard label="Actividades del módulo" value={totales.actividades} accent="var(--sky)" />
       </div>
 
-      {comparar && (
+      {/* El backend solo manda peorGrupo cuando hay al menos 2 grupos con intentos. */}
+      {mejorGrupo && peorGrupo && (
         <div className="kpi-grid">
           <StatCard
             label="Mejor desempeño"
             value={mejorGrupo.nombreGrupo}
-            hint={`${mejorGrupo.porcentajePromedio}% de aciertos`}
+            hint={`${mejorGrupo.promedioPuntaje}% de aciertos`}
             accent="var(--leaf)"
           />
           <StatCard
             label="Conviene reforzar"
             value={peorGrupo.nombreGrupo}
-            hint={`${peorGrupo.porcentajePromedio}% de aciertos`}
+            hint={`${peorGrupo.promedioPuntaje}% de aciertos`}
             accent="var(--sun)"
           />
         </div>
@@ -64,24 +63,33 @@ export default function VistaPrevia({ datos, error, cargando, recargar }) {
             <th>Actividades completadas</th>
             <th>Intentos</th>
             <th>Promedio</th>
+            <th>Último intento</th>
           </tr>
         </thead>
         <tbody>
           {grupos.map((g) => (
             <tr key={g.idGrupo}>
-              <td><strong>{g.nombreGrupo}</strong></td>
               <td>
-                {g.actividadesCompletadas} de {totales.actividades}
+                <strong>{g.nombreGrupo}</strong>
+                {!g.activo && <span className="texto-suave"> (inactivo)</span>}
+              </td>
+              <td>
+                {g.actividadesCompletadas} de {g.actividadesDisponibles}
               </td>
               <td>{g.intentos}</td>
               <td>
-                <span className="barra-aciertos">
-                  <span className={`progreso nivel-${nivelClase(g.porcentajePromedio)}`} style={{ width: 80 }}>
-                    <span style={{ width: `${g.porcentajePromedio}%` }} />
+                {g.intentos > 0 ? (
+                  <span className="barra-aciertos">
+                    <span className={`progreso nivel-${nivelClase(g.promedioPuntaje)}`} style={{ width: 80 }}>
+                      <span style={{ width: `${g.promedioPuntaje}%` }} />
+                    </span>
+                    <b>{g.promedioPuntaje}%</b>
                   </span>
-                  <b>{g.porcentajePromedio}%</b>
-                </span>
+                ) : (
+                  <span className="texto-suave">Sin intentos</span>
+                )}
               </td>
+              <td>{g.ultimoIntento ? fechaReporte.format(new Date(g.ultimoIntento)) : '—'}</td>
             </tr>
           ))}
         </tbody>

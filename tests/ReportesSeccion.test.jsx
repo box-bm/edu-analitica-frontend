@@ -1,12 +1,19 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import ReportesSeccion from '../src/pages/docente/reportes/ReportesSeccion';
+import ReportesSeccion from '../src/components/reportes/seccion/ReportesSeccion';
 import actividadesService from '../src/services/actividadesService';
 import gruposService from '../src/services/gruposService';
 import reportesService from '../src/services/reportesService';
+import seccionesService from '../src/services/seccionesService';
+
+const auth = vi.hoisted(() => ({ rol: 'docente' }));
+vi.mock('../src/context/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 5, nombre: 'Ana Docente', rol: auth.rol } }),
+}));
 
 vi.mock('../src/services/gruposService', () => ({ default: { listarMisGrupos: vi.fn() } }));
+vi.mock('../src/services/seccionesService', () => ({ default: { listarSecciones: vi.fn() } }));
 vi.mock('../src/services/actividadesService', () => ({ default: { listarModulos: vi.fn() } }));
 vi.mock('../src/services/reportesService', () => ({
   default: { vistaPrevia: vi.fn(), historial: vi.fn(), exportarCsv: vi.fn(), registrar: vi.fn() },
@@ -27,26 +34,36 @@ const modulos = [
   { id: 200, idGrado: 2, nombreModulo: 'Teclado', icono: '⌨️', orden: 1 },
 ];
 
+// Formas reales de edu-analitica-backend (feat/modulo-4-reportes).
 const vistaConDatos = {
-  totales: { grupos: 2, actividades: 4, intentos: 6, porcentajePromedio: 75 },
+  seccion: { id: 10, nombreSeccion: 'A', grado: '1ro Primaria' },
+  modulo: { id: 100, nombreModulo: 'Sumas', icono: '➕' },
+  hayResultados: true,
+  totales: { grupos: 2, intentos: 6, promedioPuntaje: 75 },
   grupos: [
-    { idGrupo: 1, nombreGrupo: 'Leones', actividadesCompletadas: 3, intentos: 4, porcentajePromedio: 90 },
-    { idGrupo: 2, nombreGrupo: 'Tigres', actividadesCompletadas: 1, intentos: 2, porcentajePromedio: 60 },
+    { idGrupo: 1, nombreGrupo: 'Leones', activo: true, intentos: 4, promedioPuntaje: 90, actividadesCompletadas: 3, actividadesDisponibles: 4, ultimoIntento: '2026-09-20T15:00:00Z' },
+    { idGrupo: 2, nombreGrupo: 'Tigres', activo: false, intentos: 2, promedioPuntaje: 60, actividadesCompletadas: 1, actividadesDisponibles: 4, ultimoIntento: '2026-09-19T15:00:00Z' },
   ],
-  mejorGrupo: { idGrupo: 1, nombreGrupo: 'Leones', porcentajePromedio: 90 },
-  peorGrupo: { idGrupo: 2, nombreGrupo: 'Tigres', porcentajePromedio: 60 },
+  mejorGrupo: { idGrupo: 1, nombreGrupo: 'Leones', promedioPuntaje: 90 },
+  peorGrupo: { idGrupo: 2, nombreGrupo: 'Tigres', promedioPuntaje: 60 },
 };
 
-const vistaVacia = { totales: { grupos: 2, actividades: 4, intentos: 0, porcentajePromedio: 0 }, grupos: [], mejorGrupo: null, peorGrupo: null };
+const vistaVacia = {
+  ...vistaConDatos,
+  hayResultados: false,
+  totales: { grupos: 2, intentos: 0, promedioPuntaje: 0 },
+  grupos: [],
+  mejorGrupo: null,
+  peorGrupo: null,
+};
 
 const reporte = {
   id: 7,
-  idSeccion: 10,
-  idModulo: 100,
   urlPdf: 'https://drive.google.com/file/d/abc/view',
   generadoEn: '2026-09-20T15:00:00Z',
-  seccion: primeroA,
+  seccion: { id: 10, nombreSeccion: 'A', grado: '1ro Primaria' },
   modulo: { id: 100, nombreModulo: 'Sumas' },
+  docente: { id: 5, nombreCompleto: 'Ana Docente' },
 };
 
 const campoLink = () => screen.getByLabelText('Link del PDF');
@@ -54,6 +71,7 @@ const campoLink = () => screen.getByLabelText('Link del PDF');
 describe('ReportesSeccion (Módulo 4)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    auth.rol = 'docente';
     gruposService.listarMisGrupos.mockResolvedValue({ success: true, data: grupos });
     actividadesService.listarModulos.mockResolvedValue({ success: true, data: modulos });
     reportesService.vistaPrevia.mockResolvedValue({ success: true, data: vistaConDatos });
@@ -85,6 +103,25 @@ describe('ReportesSeccion (Módulo 4)', () => {
     reportesService.vistaPrevia.mockResolvedValue({ success: true, data: vistaVacia });
     render(<ReportesSeccion />);
     expect(await screen.findByText('Aún no hay resultados')).toBeInTheDocument();
+  });
+
+  it('shows per-group stats with the real backend shape', async () => {
+    render(<ReportesSeccion />);
+    const fila = (await screen.findByText('Tigres', { selector: 'strong' })).closest('tr');
+    expect(within(fila).getByText('(inactivo)')).toBeInTheDocument();
+    expect(within(fila).getByText('1 de 4')).toBeInTheDocument();
+    expect(within(fila).getByText('60%')).toBeInTheDocument();
+    expect(screen.getByText('75%')).toBeInTheDocument();
+  });
+
+  it('hides best/worst when the backend sends no peorGrupo (only one group with attempts)', async () => {
+    reportesService.vistaPrevia.mockResolvedValue({
+      success: true,
+      data: { ...vistaConDatos, peorGrupo: null },
+    });
+    render(<ReportesSeccion />);
+    await screen.findByText('Promedio de aciertos');
+    expect(screen.queryByText('Mejor desempeño')).not.toBeInTheDocument();
   });
 
   it('exports the CSV for the current filter', async () => {
@@ -124,6 +161,8 @@ describe('ReportesSeccion (Módulo 4)', () => {
     expect(abrir).toHaveAttribute('href', reporte.urlPdf);
     expect(abrir).toHaveAttribute('target', '_blank');
     expect(abrir).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(within(abrir.closest('tr')).getByText('1ro Primaria · Sección A')).toBeInTheDocument();
+    expect(within(abrir.closest('tr')).getByText('Ana Docente')).toBeInTheDocument();
     expect(campoLink()).toHaveValue('');
   });
 
@@ -153,5 +192,36 @@ describe('ReportesSeccion (Módulo 4)', () => {
     render(<ReportesSeccion />);
     expect(await screen.findByText('Todavía no tienes grupos')).toBeInTheDocument();
     expect(reportesService.vistaPrevia).not.toHaveBeenCalled();
+  });
+
+  describe('as admin (read-only)', () => {
+    beforeEach(() => {
+      auth.rol = 'administrador';
+      seccionesService.listarSecciones.mockResolvedValue({
+        success: true,
+        data: [primeroA, segundoB, { id: 30, idGrado: 3, nombreSeccion: 'C', activa: false, grado: { id: 3, nombreGrado: '3ro Primaria' } }].map(
+          (s) => ({ activa: true, ...s })
+        ),
+      });
+    });
+
+    it('lists every active sección (not only own groups) and can preview, export and read history', async () => {
+      reportesService.historial.mockResolvedValue({ success: true, data: [reporte] });
+      render(<ReportesSeccion />);
+      await screen.findByText('Mejor desempeño');
+
+      expect(gruposService.listarMisGrupos).not.toHaveBeenCalled();
+      expect(within(screen.getByLabelText('Sección')).getAllByRole('option')).toHaveLength(2);
+      expect(screen.getByRole('button', { name: /Exportar CSV/ })).toBeInTheDocument();
+      expect(await screen.findByRole('link', { name: /Abrir PDF/ })).toBeInTheDocument();
+    });
+
+    it('does not offer the register form', async () => {
+      render(<ReportesSeccion />);
+      await screen.findByText('Mejor desempeño');
+      expect(screen.queryByLabelText('Link del PDF')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Registrar' })).not.toBeInTheDocument();
+      expect(screen.getByText(/Los registran los docentes/)).toBeInTheDocument();
+    });
   });
 });

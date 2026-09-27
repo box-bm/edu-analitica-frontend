@@ -10,7 +10,7 @@ import './reportes-seccion.css';
 // sin Colab), exportar CSV, registrar el link del PDF e historial.
 // ReportesSeccion lo monta con `key` por filtro, así que cada cambio de
 // filtro empieza con estado limpio.
-export default function PanelReporte({ seccion, modulo }) {
+export default function PanelReporte({ seccion, modulo, puedeRegistrar }) {
   const idSeccion = seccion.id;
   const idModulo = modulo.id;
 
@@ -35,13 +35,24 @@ export default function PanelReporte({ seccion, modulo }) {
     setAvisoCsv(result.success ? null : result.error);
   };
 
+  const panelHistorial = (
+    <div className="panel">
+      <h3 className="panel-title">Historial</h3>
+      <p className="panel-subtitle">
+        Reportes registrados para esta sección y módulo, del más reciente al más antiguo.
+        {!puedeRegistrar && ' Los registran los docentes desde su panel.'}
+      </p>
+      <HistorialReportes {...historial} />
+    </div>
+  );
+
   return (
     <div className="pila-reportes">
       <div className="panel">
         <div className="section-actions">
           <div>
             <h3 className="panel-title" style={{ margin: 0 }}>Vista previa</h3>
-            <p className="texto-suave">Calculada al momento con los resultados de tus grupos.</p>
+            <p className="texto-suave">Calculada al momento con los resultados de los grupos.</p>
           </div>
           <button className="btn-teal" onClick={exportar} disabled={descargando}>
             {descargando ? 'Preparando…' : '⬇ Exportar CSV'}
@@ -51,24 +62,23 @@ export default function PanelReporte({ seccion, modulo }) {
         <VistaPrevia {...vista} />
       </div>
 
-      <div className="panel-grid">
-        <div className="panel">
-          <h3 className="panel-title">Registrar reporte</h3>
-          <ol className="pasos-reporte">
-            <li>Exporta el CSV con el botón de arriba.</li>
-            <li>Ábrelo en el notebook de Colab y genera el PDF.</li>
-            <li>Sube el PDF a Google Drive y copia el link para compartir.</li>
-            <li>Pégalo aquí.</li>
-          </ol>
-          <RegistrarReporte idSeccion={idSeccion} idModulo={idModulo} onRegistrado={historial.recargar} />
+      {puedeRegistrar ? (
+        <div className="panel-grid">
+          <div className="panel">
+            <h3 className="panel-title">Registrar reporte</h3>
+            <ol className="pasos-reporte">
+              <li>Exporta el CSV con el botón de arriba.</li>
+              <li>Ábrelo en el notebook de Colab y genera el PDF.</li>
+              <li>Sube el PDF a Google Drive y copia el link para compartir.</li>
+              <li>Pégalo aquí.</li>
+            </ol>
+            <RegistrarReporte idSeccion={idSeccion} idModulo={idModulo} onRegistrado={historial.recargar} />
+          </div>
+          {panelHistorial}
         </div>
-
-        <div className="panel">
-          <h3 className="panel-title">Historial</h3>
-          <p className="panel-subtitle">Reportes registrados para esta sección y módulo, del más reciente al más antiguo.</p>
-          <HistorialReportes {...historial} />
-        </div>
-      </div>
+      ) : (
+        panelHistorial
+      )}
     </div>
   );
 }
