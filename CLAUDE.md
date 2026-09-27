@@ -137,10 +137,9 @@ GET                  /api/admin/resumen
 
 GET/POST/PUT/DELETE /api/actividades   implemented (Módulo 3) — preguntas go inside the activity body, max 10, see Módulo 3 below
 GET           /api/docentes/me/resultados?grado=&modulo=
-GET           /api/reportes?grado=&modulo=
-GET           /api/reportes/:id/export
-GET           /api/reportes/:id/pdf
-GET           /api/usuarios/me   planned — see "Real integration" below, not implemented yet
+GET           /api/reportes/resumen | /actividades | /resultados.csv   ?id_grado=   implemented (2026-09-26), admin + docente
+GET/POST      /api/reportes, /api/reportes/vista-previa, /api/reportes/export, /api/reportes/:id   Módulo 4 — see below (replaces the old /api/reportes/:id/export and /:id/pdf sketches)
+GET           /api/usuarios/me   implemented
 ```
 
 ### Secciones (backend ready, frontend page not built yet)
@@ -184,7 +183,38 @@ GET    /api/docentes/me/actividades              [docente]
 GET/PUT/DELETE /api/actividades/:id, POST /api/actividades   [docente]
 ```
 
+**UX note (kids copying a code from the whiteboard):** the access code format should avoid ambiguous characters (O/0, I/1) — confirm with Antony that the backend generator excludes them before changing `AccesoGrupo.jsx`'s input normalization.
+
 **Mock data is gone** — see "Data layer: real API only" above. The old `/estudiante` grades dashboard (and its mock-only pages) was **removed** on 2026-09-26: no `estudiante` accounts can exist on the backend, so it was unreachable. Unused template assets (`App.css`, `hero.png`, `react.svg`, `vite.svg`, `public/icons.svg`) and the now-unused `logo2.png` were removed too.
+
+### Módulo 4: Reportes — scoped (2026-09-27), not implemented yet
+
+Closes the reports flow that was a placeholder since Módulo 2. Full scope doc: `alcance-modulo4-reportes.md`. Goals: (1) export results per group/sección as CSV for manual analysis in Colab, (2) register the link of the externally generated PDF (Colab → Google Drive) as a "reporte" in the platform, (3) show an always-available **vista previa** of basic stats computed by the backend (no dependency on Colab), (4) let the docente open the final report.
+
+**Decision resolved: Colab is manual, not integrated.** Someone downloads the CSV, runs the notebook by hand, uploads the PDF to Drive and pastes the link back. No Google Drive API, no service credentials. The backend **never stores the PDF** (Railway's filesystem is ephemeral) — the `reportes` table only keeps `url_pdf` (`id, id_docente, id_seccion, id_modulo, url_pdf VARCHAR(500), generado_en`).
+
+**Screen:** docente `Reportes` (today `src/pages/docente/ReportesDocente.jsx`, which renders the shared `ReporteActividades` — extend it or add the Módulo 4 pieces alongside, don't break the admin `Reportes` tab that reuses the same component):
+- Filters: sección, módulo (note: the existing reportes endpoints filter by `id_grado`; Módulo 4 filters by `id_seccion` + `id_modulo`). Sección options come from `GET /api/secciones` (allowed for docente), módulos from `GET /api/modulos`.
+- **Vista previa** (always available): cards/table with average score per group, activities completed, best/worst performing group — from `GET /api/reportes/vista-previa`, not from a PDF. Needs a reasonable empty state when the sección/módulo has no solved activities yet.
+- **"Exportar CSV"** → `GET /api/reportes/export`, same blob download pattern as the current CSV (`responseType: 'blob'`, filename from `Content-Disposition`). Expected columns: id_grupo, sección, actividad, puntaje, fecha.
+- **"Registrar reporte"** form: paste the Drive link, tied to the selected sección/módulo → `POST /api/reportes`. Validate client-side that it's a well-formed http(s) URL (the backend validates with Zod too — surface its 400 message). Don't require it to be a Drive URL.
+- **Historial**: table with fecha, sección, módulo and an "Abrir PDF" button, newest first, filtered by sección/módulo. The link opens in a new tab (`target="_blank" rel="noopener noreferrer"`) — never embed the PDF in an iframe (Drive permissions make that painful).
+
+**Usage flow:** filter → see vista previa → Exportar CSV → run the notebook in Colab (outside the platform) → upload PDF to Drive → paste link in "Registrar reporte" → it shows up in the historial.
+
+**API contract (planned — confirm shapes with Antony before relying on them):**
+```
+GET  /api/reportes/vista-previa?id_seccion=&id_modulo=   [docente]  aggregated stats computed on the fly
+GET  /api/reportes/export?id_seccion=&id_modulo=         [docente]  CSV download
+POST /api/reportes                                       [docente]  {id_seccion, id_modulo, url_pdf}
+GET  /api/reportes?id_seccion=&id_modulo=                [docente]  history, newest first
+GET  /api/reportes/:id                                   [docente]  detail incl. url_pdf
+```
+Heads-up for the backend: `GET /api/reportes/:id` must be registered after the literal routes (`resumen`, `actividades`, `resultados.csv`, `vista-previa`, `export`) or it will swallow them.
+
+**QA minimum cases:** vista previa correct with existing results and a sane empty state without them; CSV has the expected columns; invalid URL (plain text) → validation error; historial filters by sección/módulo; a docente can't see/register reports for secciones that aren't theirs (if that ownership rule is confirmed — see open decisions).
+
+**Out of scope:** automating the CSV → Colab upload or PDF download (Drive API), and generating charts/analysis inside the platform for this flow (that lives in the Colab notebook).
 
 ### Real integration: auth against the live backend — done
 
@@ -194,7 +224,7 @@ The Módulo 1 auth flow — login, refresh, logout, protected routes, and `usuar
 - CORS is correctly scoped (`Access-Control-Allow-Credentials: true`, `Access-Control-Allow-Origin` matching this deploy's exact GitHub Pages origin) — confirmed via response headers.
 - Infra is live end-to-end: Neon Postgres + Railway deploy on the backend (test users, roles, and `grados`/`secciones` data already seeded), GitHub Pages on this repo.
 
-This piece of Módulo 2 is closed. Next active frontend work is the `Secciones` admin page (above).
+This piece of Módulo 2 is closed. The `Secciones` admin page is done (`SeccionesAdmin.jsx`); next active frontend work is Módulo 4 (Reportes, above).
 
 This round of integration is scoped to auth + Secciones only — the rest of the Módulo 2 backend surface (`actividades`, `reportes`) stays out of scope for now. The student/group model that was previously blocking that work is now resolved — see "Módulo 3: actividades y acceso por grupo" above for what that unblocks.
 
@@ -212,3 +242,14 @@ Unit/integration coverage now exists via Vitest — see "Testing" under Commands
 - ~~Student access model~~ **resolved: one access code per group** (sub-decision confirmed 2026-09-26). See "Módulo 3" above.
 - Whether docente accounts (created by admin with a temporary password) require a forced password change on first login.
 - Final copy/tone for the student-facing result screen — a first version is implemented in `src/utils/estrellas.js` ("¡Increíble!" / "¡Muy bien!" / "¡Buen intento!"); worth a review with Josue.
+- ~~Colab integration~~ **resolved (Módulo 4): manual flow**, only the PDF link is stored.
+- Módulo 4: are reports visible only to the docente who registered them, or to any docente/admin? Affects the `GET /api/reportes` filter and whether `Reportes` needs a "mis reportes" vs "todos" distinction. Confirm with Josue.
+- Módulo 4: who runs the Colab notebook in practice during the pilot — each docente, or centralized (e.g. Antony)?
+
+## Code conventions
+
+- Modern JS (ES2020+), no TypeScript — use JSDoc on props where it helps readability, since there's no compile-time type checking.
+- Function components with hooks, no classes. One component per file.
+- Frontend form validation is UX only, **never the only security layer** — the backend revalidates everything.
+- Every critical flow (login, solving an activity, registering a report) needs at least one automated test before merging to `main` (Vitest today; Cypress once it's set up).
+- Don't assume API changes without confirming with Antony. If an endpoint returns a shape different from what's documented here, this file is stale — flag it so both repos get corrected.
