@@ -6,8 +6,8 @@ import ReportesEstudiante from './estudiante/ReportesEstudiante';
 
 const MENU_ESTUDIANTE = [
   { label: 'Inicio', icon: '🏠', content: <InicioEstudiante /> },
-  { label: 'Matemática', icon: '📐', content: <MateriaEstudiante cursoId="mat" cursoNombre="Matemática" color="#2563eb" /> },
-  { label: 'Idiomática', icon: '📖', content: <MateriaEstudiante cursoId="idi" cursoNombre="Idiomática" color="#16a34a" /> },
+  { label: 'Matemática', icon: '📐', content: <MateriaEstudiante cursoId="mat" cursoNombre="Matemática" color="#149e94" /> },
+  { label: 'Idiomática', icon: '📖', content: <MateriaEstudiante cursoId="idi" cursoNombre="Idiomática" color="#3aa55c" /> },
   { label: 'Resultados', icon: '📊', content: <ResultadosEstudiante /> },
   { label: 'Reportes', icon: '📄', content: <ReportesEstudiante /> },
 ];

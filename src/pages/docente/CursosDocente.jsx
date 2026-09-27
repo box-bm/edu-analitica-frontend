@@ -10,7 +10,7 @@ export default function CursosDocente() {
           <h3 className="panel-title" style={{ color: curso.color }}>
             {curso.nombre}
           </h3>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: 0 }}>Grado 9° · {ESTUDIANTES.length} estudiantes</p>
+          <p style={{ color: '#4b5a7a', fontSize: '0.9rem', marginTop: 0 }}>Grado 9° · {ESTUDIANTES.length} estudiantes</p>
           <table className="data-table">
             <thead>
               <tr>

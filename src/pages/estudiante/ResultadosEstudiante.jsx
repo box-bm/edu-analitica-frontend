@@ -20,8 +20,8 @@ export default function ResultadosEstudiante() {
             <PolarGrid />
             <PolarAngleAxis dataKey="curso" tick={{ fontSize: 12 }} />
             <PolarRadiusAxis domain={[0, 5]} tick={{ fontSize: 10 }} />
-            <Radar name="Yo" dataKey="Yo" stroke="#2563eb" fill="#2563eb" fillOpacity={0.4} />
-            <Radar name="Promedio del grado" dataKey="Promedio del grado" stroke="#94a3b8" fill="#94a3b8" fillOpacity={0.2} />
+            <Radar name="Yo" dataKey="Yo" stroke="#149e94" fill="#149e94" fillOpacity={0.4} />
+            <Radar name="Promedio del grado" dataKey="Promedio del grado" stroke="#8390a8" fill="#8390a8" fillOpacity={0.2} />
             <Legend />
             <Tooltip />
           </RadarChart>

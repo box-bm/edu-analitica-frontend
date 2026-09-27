@@ -4,10 +4,10 @@
 export const PERIODOS = ['Periodo 1', 'Periodo 2', 'Periodo 3'];
 
 export const CURSOS = [
-  { id: 'mat', nombre: 'Matemática', docente: 'Prof. Ana Torres', color: '#2563eb' },
-  { id: 'idi', nombre: 'Idiomática', docente: 'Prof. Ana Torres', color: '#16a34a' },
-  { id: 'cie', nombre: 'Ciencias', docente: 'Prof. Laura Gómez', color: '#f59e0b' },
-  { id: 'his', nombre: 'Historia', docente: 'Prof. Carlos Ruiz', color: '#dc2626' },
+  { id: 'mat', nombre: 'Matemática', docente: 'Prof. Ana Torres', color: '#149e94' },
+  { id: 'idi', nombre: 'Idiomática', docente: 'Prof. Ana Torres', color: '#3aa55c' },
+  { id: 'cie', nombre: 'Ciencias', docente: 'Prof. Laura Gómez', color: '#e6a100' },
+  { id: 'his', nombre: 'Historia', docente: 'Prof. Carlos Ruiz', color: '#f2663a' },
 ];
 
 // Cursos que dicta el usuario docente que inicia sesión en la demo.

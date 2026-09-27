@@ -15,10 +15,10 @@ export default function InicioDocente() {
       </div>
 
       <div className="kpi-grid">
-        <StatCard label="Cursos a cargo" value={misCursos.length} accent="#2563eb" />
-        <StatCard label="Estudiantes" value={ESTUDIANTES.length} accent="#16a34a" />
-        <StatCard label="Promedio de mis cursos" value={promedioMisCursos} accent="#f59e0b" />
-        <StatCard label="Formularios pendientes" value={2} hint="Notas del Periodo 3" accent="#dc2626" />
+        <StatCard label="Cursos a cargo" value={misCursos.length} accent="#149e94" />
+        <StatCard label="Estudiantes" value={ESTUDIANTES.length} accent="#3aa55c" />
+        <StatCard label="Promedio de mis cursos" value={promedioMisCursos} accent="#e6a100" />
+        <StatCard label="Formularios pendientes" value={2} hint="Notas del Periodo 3" accent="#f2663a" />
       </div>
 
       <div className="panel-grid">
@@ -27,7 +27,7 @@ export default function InicioDocente() {
             <h3 className="panel-title" style={{ color: c.color }}>
               {c.nombre}
             </h3>
-            <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+            <p style={{ margin: 0, color: '#4b5a7a', fontSize: '0.9rem' }}>
               {ESTUDIANTES.length} estudiantes · Promedio actual {promedioCurso(c.id).toFixed(1)}
             </p>
           </div>

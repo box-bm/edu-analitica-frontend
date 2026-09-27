@@ -11,7 +11,7 @@ const distribucion = ['Excelente', 'Bueno', 'Regular', 'Bajo'].map((etiqueta) =>
   value: ESTUDIANTES.filter((e) => clasificacion(promedioEstudianteGeneral(e.id)) === etiqueta).length,
 }));
 
-const COLORES = { Excelente: '#16a34a', Bueno: '#2563eb', Regular: '#f59e0b', Bajo: '#dc2626' };
+const COLORES = { Excelente: '#3aa55c', Bueno: '#149e94', Regular: '#e6a100', Bajo: '#f2663a' };
 
 export default function InicioAdmin() {
   return (
@@ -22,10 +22,10 @@ export default function InicioAdmin() {
       </div>
 
       <div className="kpi-grid">
-        <StatCard label="Estudiantes" value={ESTUDIANTES.length} accent="#2563eb" />
-        <StatCard label="Docentes" value={docentesActivos} accent="#16a34a" />
-        <StatCard label="Cursos activos" value={CURSOS.length} accent="#f59e0b" />
-        <StatCard label="Promedio institucional" value={promedioGeneralColegio().toFixed(1)} accent="#7c3aed" />
+        <StatCard label="Estudiantes" value={ESTUDIANTES.length} accent="#149e94" />
+        <StatCard label="Docentes" value={docentesActivos} accent="#3aa55c" />
+        <StatCard label="Cursos activos" value={CURSOS.length} accent="#e6a100" />
+        <StatCard label="Promedio institucional" value={promedioGeneralColegio().toFixed(1)} accent="#8a63f0" />
       </div>
 
       <div className="panel-grid">
@@ -36,7 +36,7 @@ export default function InicioAdmin() {
               <XAxis dataKey="nombre" tick={{ fontSize: 12 }} />
               <YAxis domain={[0, 5]} tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Bar dataKey="promedio" fill="#2563eb" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="promedio" fill="#149e94" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

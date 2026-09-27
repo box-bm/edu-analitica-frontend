@@ -10,7 +10,9 @@ This repo is the **frontend**. It's meant to consume the `edu-analitica-backend`
 
 Team: Jose (frontend, owner of this repo) · Antony (backend) · María José (QA) · Brandon (architect) · Josue (PO).
 
-**Current staffing note (as of 2026-09-18):** Jose is on vacation, back the week of 2026-09-21. Brandon (architect) is covering the frontend seat this week, working in parallel with Antony on backend, to keep the Módulo 2 auth/Secciones slice moving. See "Auth: real bug found" below for the active work item.
+**Staffing update (2026-09-26):** the rest of the team can't take Módulo 3, so Brandon is building it (frontend + backend) together with a visual redesign, on branch `feat/modulo-3-y-rediseno`.
+
+**Earlier staffing note (as of 2026-09-18):** Jose is on vacation, back the week of 2026-09-21. Brandon (architect) is covering the frontend seat this week, working in parallel with Antony on backend, to keep the Módulo 2 auth/Secciones slice moving. See "Auth: real bug found" below for the active work item.
 
 ### Environment & UX constraints (drive real UI decisions)
 
@@ -32,6 +34,9 @@ npm run test:watch # vitest in watch mode
 - `apiClient.test.js` — the Authorization interceptor (the exact bug fixed above): no header with no token, `Bearer <token>` once `setAccessToken` is called, cleared again after logout.
 - `AuthContext.test.jsx` — `restoreSession` on mount (success and failure), `login()`, `logout()`, and that the accessToken each of these produces actually reaches outgoing requests (integration-style, using the real `apiClient`, only `userService` is mocked).
 - `PrivateRoute.test.jsx` — loading state, redirect when unauthenticated, redirect to `/no-autorizado` on role mismatch, renders children when authorized.
+- `grupoClient.test.js` — the group token is attached independently of the docente/admin accessToken, no cookies, a 401 on a group route fires the expiry callback but a 401 on `grupo-login` (wrong code) doesn't.
+- `AccesoGrupo.test.jsx` — code input normalization (uppercase, symbols stripped, max 6), button disabled until complete, success navigates to `/grupo/modulos`, wrong code shows a friendly message.
+- `estrellas.test.js` — at least 1 star always, thresholds, and no failure-sounding words in kid-facing result copy.
 
 This does **not** replace the live-deploy validation from "Auth: real integration fixed" above — these are fast regression tests for the logic, not a substitute for testing against the real backend before shipping an auth-related change.
 
@@ -79,6 +84,17 @@ Charts use `recharts` (bar, line, pie, radar) inside `ResponsiveContainer`; they
 
 `DashboardLayout`'s content area (`main.dashboard-content`) is a flex child and needs `min-width: 0` (already set) for wide tables to scroll inside `.panel`'s `overflow-x: auto` instead of overflowing the page — keep this in mind if the flex layout is restructured.
 
+### Visual system (redesign, 2026-09-26)
+
+"Escolar cálido y lúdico": navy ink from the logo + orange / teal / yellow accents on cream "paper", rounded fonts (Baloo 2 for headings, Nunito for body, loaded from Google Fonts in `index.html` with system fallbacks). **All colors are CSS custom properties in `src/index.css`** (`--ink`, `--paper`, `--orange`, `--teal`, `--sun`, `--grape`, `--sky`, `--leaf`, each with `-soft`/`-deep` variants) — use tokens, not hex, in new CSS. Shared buttons (`.btn-primary` orange, `.btn-teal`, `.btn-secondary`, `.btn-ghost`, `.btn-sm`) and `.cargando` / `.estado-vacio` live there too. The old blue hex values in pages/mockData were remapped to the palette. Light theme only (`color-scheme: light`).
+
+- `DashboardLayout`: fixed sidebar on desktop (no more hover-to-expand), drawer with scrim under 900px, greeting + date + role chip + initials avatar in the topbar. Menu items accept an optional `color`; otherwise they cycle through the palette.
+- `StatCard` takes `accent` as any CSS color (tokens like `var(--teal)` work) via the `--accent` custom property.
+- `Modal` accepts `wide` (760px) and has `role="dialog"`.
+- Kids' zone styles are in `src/pages/estudiante/grupo.css` (big buttons `.boton-grande`, module colors via `.color-<name>`). **No red anywhere in the kids' zone** — questions to review use yellow with a 💡, results always show at least 1 star.
+
+**React Compiler gotcha (hit and fixed in `ActividadesDocente.jsx`):** `babel-plugin-react-compiler` memoizes closures keyed on the property paths they read. A handler that reads `editor.form…` from a nullable state value crashed on first render with `Cannot read properties of null (reading 'form')`, even though the handler was never called. Fix pattern: use functional `setState(prev => …)` updates, or render the stateful sub-UI in a child component that only mounts when the value is non-null (what `EditorActividad` does).
+
 ## Original project spec vs. what's actually built
 
 The project's original planning doc (from Brandon/architect) describes a different target than what exists in this repo today. Treat the items below as **not yet implemented** — don't assume TypeScript types, Tailwind classes, Cypress tests, or an activities-based student flow exist just because they're referenced in planning materials.
@@ -109,11 +125,10 @@ POST /api/auth/logout   → 204
 GET/POST/PUT/DELETE /api/usuarios
 GET/POST/PUT         /api/modulos
 GET/POST             /api/grados          implemented on backend, admin-only
-GET/POST/PUT/DELETE  /api/secciones?id_grado=   implemented on backend, admin-only — not yet consumed here, see "Secciones" below
+GET/POST/PUT/DELETE  /api/secciones?id_grado=   implemented; admin page in SeccionesAdmin.jsx; GET also allowed for docente (Módulo 3)
 GET                  /api/admin/resumen
 
-GET/POST/PUT  /api/actividades
-POST          /api/actividades/:id/preguntas   max 10 questions — disable "+ Agregar pregunta" at the limit client-side, but the backend also enforces it
+GET/POST/PUT/DELETE /api/actividades   implemented (Módulo 3) — preguntas go inside the activity body, max 10, see Módulo 3 below
 GET           /api/docentes/me/resultados?grado=&modulo=
 GET           /api/reportes?grado=&modulo=
 GET           /api/reportes/:id/export
@@ -131,37 +146,38 @@ Módulo 2 (ampliado) adds a `secciones` concept alongside `grados`, so the schoo
 - Will need a `gradosService`/`seccionesService` (or extend an existing service file) wrapping `apiClient` calls to the two endpoints above.
 - Grado select in the create/edit modal should be populated from `GET /api/grados`.
 
-### Módulo 3: actividades y acceso por grupo (planning locked in 2026-09-21 — next requirement for Jose)
+### Módulo 3: actividades y acceso por grupo — implemented (2026-09-26)
 
-The previously-open "student access model" decision (formerly listed under "Open decisions" below) is now resolved: student access is **by group/sección**, through a coordinator who logs in with an **access code**, not a traditional `usuario`/`password` login — it does not go through `/login` or `AuthContext`. This is what unblocks the activities-based student flow flagged as spec-only in "Original project spec vs. what's actually built" above (`estudiante/SeleccionModulo`, `Actividad`, `Resultado`) — it's the next concrete work item for Jose.
+Decisions confirmed: **one access code per group** (no individual PINs), and activities come from a **seeded base catalog plus docente-authored activities**. Backend contract and security model are documented in `../edu-analitica-backend/CLAUDE.md` ("Módulo 3") — keep both in sync. Validated end to end against the real backend running locally (Postgres + seed), in a browser, for the kids' flow and the docente pages; **not yet validated against the Railway/GitHub Pages deploy** (the backend branch must be deployed and `npm run seed:actividades` run there first).
 
-**New/updated pages** (use this repo's existing lowercase-`.jsx` naming, not the PascalCase names from the original planning doc):
-- `src/pages/docente/Grupos.jsx` (new) — list/create groups per sección, view/regenerate the group's access code.
-- `src/pages/estudiante/AccesoGrupo.jsx` (new) — access-code entry screen, replaces traditional login for this role.
-- `src/pages/estudiante/SeleccionModulo.jsx`, `Actividad.jsx`, `Resultado.jsx` — exist today only as the spec-only UI noted above; this wires them to the new group session token.
+**Kids' zone (group session, not `AuthContext`):**
+- Routes: `/grupo` (`AccesoGrupo.jsx`, code entry, linked from the login's yellow "¿Eres estudiante?" card), `/grupo/modulos` and `/grupo/modulos/:idModulo` (`SeleccionModulo.jsx`), `/grupo/actividad/:idActividad` (`Actividad.jsx`, one question at a time, 2–4 big colored options), `/grupo/resultado` (`Resultado.jsx`, stars + review; reached only via router state, a reload redirects to modules). All but `/grupo` are wrapped in `GrupoRoute`, which renders `GrupoLayout` or redirects to `/grupo`.
+- `src/services/grupoClient.jsx` is a **separate axios instance** with its own in-memory token (never `localStorage`) and no `withCredentials`. A 401 from any group route (token expired after 45 min, or the docente regenerated the code) calls the callback registered by `GrupoContext`, which clears the session; `/grupo` then shows "Se acabó el tiempo…". A reload also drops the session by design.
+- `src/context/GrupoContext.jsx` (`useGrupo`: `grupo`, `activo`, `expirada`, `entrar(codigo)`, `salir()`); `GrupoProvider` wraps the router in `App.jsx`.
+- Stars: `src/utils/estrellas.js` (≥90% → 3, ≥60% → 2, else 1) with the result copy.
 
-**Group session handling is separate from `AuthContext`:**
-- The coordinator does **not** use `AuthContext` the way docente/admin do — this is a separate, short-lived (~45 min proposed), limited-scope group session token.
-- No refresh token for this flow — when it expires, the coordinator re-enters the access code.
-- Same non-negotiable as everywhere else in this app: the token lives in memory only, never `localStorage`.
-- `AccesoGrupo.jsx` calls `POST /api/auth/grupo-login` with the code and holds the returned token in memory.
+**Docente pages** (added to `MENU_DOCENTE`):
+- `Grupos.jsx` — KPIs, group cards with the big access code, per-module progress, "Nuevo código" / "Desactivar" behind confirmation modals (no `window.confirm`), create modal (sección select from `GET /api/secciones`, now allowed for docente), recent results table.
+- `ActividadesDocente.jsx` — catalog + own activities with grado filter and "Solo mis actividades"; catalog items open read-only with a "Crear una copia editable" shortcut; editor with up to 10 questions (counter, "+ Agregar pregunta" disabled at 10), 2–4 options each, radio for the correct one, client-side validation mirroring the backend's Zod rules. On edit, preguntas are only sent if they changed, because the backend returns 409 when replacing preguntas of an activity a group already solved.
 
-**API contract — Grupo (new; confirm exact status/shape with Antony before relying on it, per the sync note below):**
+**Services:** `grupoService.jsx` (kid-friendly error messages), `gruposService.jsx`, `actividadesService.jsx` (surfaces the first Zod field error from a 400).
+
+**API contract (implemented):**
 ```
-POST /api/grupos                        [docente]
-GET  /api/docentes/me/grupos            [docente]
-PUT  /api/grupos/:id/regenerar-codigo   [docente]
-
-POST /api/auth/grupo-login              [public]     body: {codigo_acceso} → grupo token
-GET  /api/grupo/me/actividades          [grupo token]
-GET  /api/actividades/:id/preguntas     [grupo token]
-POST /api/actividades/:id/respuestas    [grupo token]
+POST /api/auth/grupo-login              [public]       {codigo_acceso} → {token, grupo}
+GET  /api/grupo/me/actividades          [grupo token]  modules → activities (completada, mejorPuntaje)
 GET  /api/grupo/me/avance               [grupo token]
+GET  /api/actividades/:id/preguntas     [grupo token]  no correct answers
+POST /api/actividades/:id/respuestas    [grupo token]  {respuestas:[{idPregunta, respuesta}]} → {puntaje, puntajeTotal, porcentajeModulo, detalle[]}
+
+POST   /api/grupos | GET /api/docentes/me/grupos | PUT /api/grupos/:id/regenerar-codigo | DELETE /api/grupos/:id   [docente]
+GET    /api/docentes/me/resultados?id_grupo=     [docente]
+GET    /api/modulos                              [docente, admin]
+GET    /api/docentes/me/actividades              [docente]
+GET/PUT/DELETE /api/actividades/:id, POST /api/actividades   [docente]
 ```
 
-**UX note:** confirm the final access-code format with Antony — avoid ambiguous characters (`O`/`0`, `I`/`1`), since kids will be reading it off a whiteboard or hearing it read aloud and transcribing it themselves.
-
-**Still pending before implementation starts:** confirm whether the real mechanism is "one code per group" (current design) vs. an individual PIN with later aggregation — this changes `AccesoGrupo.jsx` and the whole flow for this section.
+**Not done / still mock:** the docente `Inicio`/`Cursos`/`Estudiantes`/`Reportes` tabs and all admin dashboards still read `mockData.js`. The old `/estudiante` dashboard is untouched and unreachable in practice (no `estudiante` accounts exist; students use `/grupo`) — candidate for removal once the team agrees.
 
 ### Real integration: auth against the live backend — done
 
@@ -186,6 +202,6 @@ Unit/integration coverage now exists via Vitest — see "Testing" under Commands
 
 ### Open decisions (per project planning, unresolved as of last sync)
 
-- ~~Student access model (individual login vs. group/shared access) — blocked on Josue~~ **resolved 2026-09-21: group/sección access via a coordinator access-code login.** See "Módulo 3: actividades y acceso por grupo" above; one sub-decision remains open there (code-per-group vs. individual PIN with aggregation).
+- ~~Student access model~~ **resolved: one access code per group** (sub-decision confirmed 2026-09-26). See "Módulo 3" above.
 - Whether docente accounts (created by admin with a temporary password) require a forced password change on first login.
-- Final copy/tone for the student-facing result screen — needs to fit the "no failure-sounding messaging" constraint above.
+- Final copy/tone for the student-facing result screen — a first version is implemented in `src/utils/estrellas.js` ("¡Increíble!" / "¡Muy bien!" / "¡Buen intento!"); worth a review with Josue.

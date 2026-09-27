@@ -59,7 +59,7 @@ export default function UsuariosAdmin() {
           ))}
         </tbody>
       </table>
-      <p className="form-feedback" style={{ color: '#94a3b8' }}>
+      <p className="form-feedback" style={{ color: '#8390a8' }}>
         Datos de ejemplo — los cambios no se guardan en el servidor.
       </p>
     </div>

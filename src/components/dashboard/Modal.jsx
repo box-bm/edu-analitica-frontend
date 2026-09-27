@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export default function Modal({ title, onClose, children }) {
+export default function Modal({ title, onClose, children, wide = false }) {
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
@@ -11,7 +11,13 @@ export default function Modal({ title, onClose, children }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`modal ${wide ? 'modal-wide' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h3 className="panel-title" style={{ margin: 0 }}>
             {title}
