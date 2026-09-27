@@ -4,6 +4,7 @@ import Modal from '../../components/dashboard/Modal';
 import { useAuth } from '../../context/AuthContext';
 import useCarga from '../../hooks/useCarga';
 import usuariosService from '../../services/usuariosService';
+import { nombreRol } from '../../utils/rol';
 
 const ETIQUETA_ROL = { administrador: 'Admin', docente: 'Docente' };
 const FORM_VACIO = { nombreCompleto: '', usuario: '', password: '', rol: 'docente' };
@@ -38,7 +39,7 @@ export default function UsuariosAdmin() {
   const texto = busqueda.trim().toLowerCase();
   const visibles = usuarios.filter(
     (u) =>
-      (!filtroRol || u.rol.nombreRol === filtroRol) &&
+      (!filtroRol || nombreRol(u.rol) === filtroRol) &&
       (!texto || u.nombreCompleto.toLowerCase().includes(texto) || u.usuario.toLowerCase().includes(texto))
   );
 
@@ -49,7 +50,7 @@ export default function UsuariosAdmin() {
   };
 
   const abrirEditar = (u) => {
-    setForm({ nombreCompleto: u.nombreCompleto, usuario: u.usuario, password: '', rol: u.rol.nombreRol });
+    setForm({ nombreCompleto: u.nombreCompleto, usuario: u.usuario, password: '', rol: nombreRol(u.rol) });
     setFormError(null);
     setEditando(u);
   };
@@ -139,7 +140,7 @@ export default function UsuariosAdmin() {
                   {esYo(u) && <span className="texto-suave"> (tú)</span>}
                 </td>
                 <td>{u.usuario}</td>
-                <td><Badge>{ETIQUETA_ROL[u.rol.nombreRol] ?? u.rol.nombreRol}</Badge></td>
+                <td><Badge>{ETIQUETA_ROL[nombreRol(u.rol)] ?? nombreRol(u.rol)}</Badge></td>
                 <td><Badge>{u.activo ? 'Activo' : 'Inactivo'}</Badge></td>
                 <td className="texto-suave">{fecha.format(new Date(u.creadoEn))}</td>
                 <td>

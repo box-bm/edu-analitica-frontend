@@ -108,7 +108,7 @@ describe('Módulo 2 — menú y filtros por rol', () => {
         cy.get('select[aria-label="Filtrar por grado"]').select(idGrado);
 
         cy.wait('@actividades').then(({ request, response }) => {
-          expect(new URL(request.url).searchParams.get('id_grado')).to.eq(idGrado);
+          expect(new URL(request.url).searchParams.get('idGrado')).to.eq(idGrado);
           const filas = response.body.actividades;
           filas.forEach((a) => expect(a.grado).to.eq(nombreGrado));
           if (filas.length === 0) {

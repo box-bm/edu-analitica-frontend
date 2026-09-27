@@ -5,11 +5,11 @@ const error = (err, porDefecto) => ({
   error: err.response?.data?.message || porDefecto,
 });
 
-const params = (idGrado) => (idGrado ? { id_grado: idGrado } : {});
+const params = (idGrado) => (idGrado ? { idGrado } : {});
 
 const paramsFiltro = ({ idSeccion, idModulo } = {}) => ({
-  ...(idSeccion ? { id_seccion: idSeccion } : {}),
-  ...(idModulo ? { id_modulo: idModulo } : {}),
+  ...(idSeccion ? { idSeccion } : {}),
+  ...(idModulo ? { idModulo } : {}),
 });
 
 // Se descarga con axios (no con un <a href>) porque la ruta exige el

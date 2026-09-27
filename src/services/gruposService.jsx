@@ -54,7 +54,7 @@ class GruposService {
   async resultados(idGrupo) {
     try {
       const response = await apiClient.get('/api/docentes/me/resultados', {
-        params: idGrupo ? { id_grupo: idGrupo } : {},
+        params: idGrupo ? { idGrupo } : {},
       });
       return { success: true, data: response.data };
     } catch (err) {

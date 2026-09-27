@@ -75,7 +75,7 @@ describe('AuthContext', () => {
         id: 1,
         nombreCompleto: 'Admin Principal',
         usuario: 'admin.test',
-        rol: { id: 1, nombreRol: 'administrador' },
+        rol: 'administrador',
       },
     });
 

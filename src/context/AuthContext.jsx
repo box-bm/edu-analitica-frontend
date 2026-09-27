@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import userService from '../services/userService';
 import { setAccessToken } from '../services/apiClient';
+import { nombreRol } from '../utils/rol';
 
 const AuthContext = createContext();
 
@@ -28,16 +29,15 @@ export const AuthProvider = ({ children }) => {
       if (result.success) {
         setAccessToken(result.data.accessToken);
 
-        // GET /api/usuarios/me returns the user directly (not wrapped), with
-        // nombreCompleto and a nested rol: { id, nombreRol } — a different
-        // shape than POST /api/auth/login's flat { id, nombre, rol }.
+        // GET /api/usuarios/me returns the user directly (not wrapped), same
+        // shape as POST /api/auth/login's usuario (rol is a string).
         const me = await userService.me();
         if (me.success && me.data) {
           const userData = {
             id: me.data.id,
             nombre: me.data.nombreCompleto,
             usuario: me.data.usuario,
-            rol: me.data.rol.nombreRol,
+            rol: nombreRol(me.data.rol),
           };
           setUser(userData);
         }
@@ -59,12 +59,12 @@ export const AuthProvider = ({ children }) => {
       if (response.success && response.data) {
         setAccessToken(response.data.accessToken);
 
-        // POST /api/auth/login returns { accessToken, usuario: { id, nombre, rol } }
-        // (no username field here — that's only on GET /api/usuarios/me)
+        // POST /api/auth/login returns { accessToken, usuario: { id, nombre, nombreCompleto, usuario, rol } }
         const userData = {
           id: response.data.usuario.id,
           nombre: response.data.usuario.nombre,
-          rol: response.data.usuario.rol,
+          usuario: response.data.usuario.usuario,
+          rol: nombreRol(response.data.usuario.rol),
         };
 
         setUser(userData);

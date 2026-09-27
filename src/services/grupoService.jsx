@@ -11,7 +11,7 @@ class GrupoService {
   async login(codigo) {
     try {
       const response = await grupoClient.post('/api/auth/grupo-login', {
-        codigo_acceso: codigo,
+        codigoAcceso: codigo,
       });
       return { success: true, data: response.data };
     } catch (err) {
