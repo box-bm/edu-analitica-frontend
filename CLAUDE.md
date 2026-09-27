@@ -37,6 +37,8 @@ npm run test:watch # vitest in watch mode
 - `grupoClient.test.js` — the group token is attached independently of the docente/admin accessToken, no cookies, a 401 on a group route fires the expiry callback but a 401 on `grupo-login` (wrong code) doesn't.
 - `AccesoGrupo.test.jsx` — code input normalization (uppercase, symbols stripped, max 6), button disabled until complete, success navigates to `/grupo/modulos`, wrong code shows a friendly message.
 - `estrellas.test.js` — at least 1 star always, thresholds, and no failure-sounding words in kid-facing result copy.
+- `UsuariosAdmin.test.jsx` — lists from the API, own account can't be deactivated, deactivating another user calls the API and reloads, editing without a new password doesn't send `password`.
+- `useCarga.test.jsx` — success, error and `recargar()`.
 
 This does **not** replace the live-deploy validation from "Auth: real integration fixed" above — these are fast regression tests for the logic, not a substitute for testing against the real backend before shipping an auth-related change.
 
@@ -74,11 +76,16 @@ Each role has a thin top-level page (`src/pages/admin.jsx`, `docente.jsx`) that 
 
 Shared dashboard UI pieces (`StatCard`, `Badge`, and `widgets.css` with `.panel`, `.kpi-grid`, `.data-table`, `.dashboard-form`, etc.) live in `src/components/dashboard/` and are reused across the admin and docente sections.
 
-### Mock data layer
+### Data layer: real API only (2026-09-26)
 
-All dashboard content (KPIs, tables, charts) is currently backed by a single mock dataset in `src/data/mockData.js` — courses, students, and a `NOTAS` grade matrix (`NOTAS[estudianteId][cursoId] = [nota periodo1, nota periodo2, nota periodo3]`), plus derived helpers (`promedioEstudianteCurso`, `promedioCurso`, `promedioGeneralColegio`, `clasificacion`, etc.). The data is intentionally shared/cross-referenced across roles: `CURSOS_DOCENTE_ACTUAL` and `ESTUDIANTE_ACTUAL_ID` hardcode which courses/student the logged-in demo docente/estudiante "owns", independent of who actually logged in (login only determines the *role*, not which mock entity is shown). When replacing mocks with real API data, these constants and helper functions are the integration points.
+**There is no mock data anymore** — `src/data/mockData.js` was deleted. Every screen reads the backend through a service in `src/services/` (each returns `{ success, data, error }`). Pages load with the `useCarga(cargar)` hook (`src/hooks/useCarga.js`: `{ datos, error, cargando, recargar }`); pass a **stable** loader (module-level function or `useCallback`), otherwise it refetches on every render. Rule going forward: only fall back to mock data for a feature whose backend module doesn't exist yet, and label it as such in the UI.
 
-Charts use `recharts` (bar, line, pie, radar) inside `ResponsiveContainer`; they animate in on mount, so a chart appearing empty in a screenshot taken immediately after navigation is very likely mid-animation, not broken.
+- Admin: `Inicio` → `GET /api/reportes/resumen`; `Usuarios` → `/api/usuarios` CRUD (create/edit modal, activate/deactivate; own account can't be deactivated or demoted — enforced by the backend too; empty password on edit is not sent); `Secciones` → `/api/secciones`; `Reportes` → `GET /api/reportes/actividades` + CSV export.
+- Docente: `Inicio` → the same resumen endpoint (backend scopes it to the docente's groups); `Grupos`; `Actividades`; `Reportes` → same `ReporteActividades` component as admin.
+- Removed because no backend module exists and they contradicted the Módulo 3 model (groups, no individual students, no 0–5 grades): docente `Cursos` and `Estudiantes`, admin `Configuración`.
+- Charts live in `src/components/reportes/` (`GraficasResumen`, `ReporteActividades`, `colores.js`). Colors were validated with the dataviz validator: single series `#149e94`; level ramp (inicial → alto) `#5cbfb4 / #1f9a8f / #0b5f59`. Level thresholds (≥90% alto, ≥60% medio) are the same as `src/utils/estrellas.js` and the backend — change all three together.
+- The CSV download goes through axios with `responseType: 'blob'` (the route needs the `Authorization` header, a plain `<a href>` wouldn't send it); the filename comes from `Content-Disposition`, which the backend exposes via CORS.
+- Grado filters use `seccionesService.listarGradosConSecciones()` — the docente can't read `/api/grados`.
 
 ### Layout gotcha
 
@@ -86,7 +93,7 @@ Charts use `recharts` (bar, line, pie, radar) inside `ResponsiveContainer`; they
 
 ### Visual system (redesign, 2026-09-26)
 
-"Escolar cálido y lúdico": navy ink from the logo + orange / teal / yellow accents on cream "paper", rounded fonts (Baloo 2 for headings, Nunito for body, loaded from Google Fonts in `index.html` with system fallbacks). **All colors are CSS custom properties in `src/index.css`** (`--ink`, `--paper`, `--orange`, `--teal`, `--sun`, `--grape`, `--sky`, `--leaf`, each with `-soft`/`-deep` variants) — use tokens, not hex, in new CSS. Shared buttons (`.btn-primary` orange, `.btn-teal`, `.btn-secondary`, `.btn-ghost`, `.btn-sm`) and `.cargando` / `.estado-vacio` live there too. The old blue hex values in pages/mockData were remapped to the palette. Light theme only (`color-scheme: light`).
+"Escolar cálido y lúdico": navy ink from the logo + orange / teal / yellow accents on cream "paper", rounded fonts (Baloo 2 for headings, Nunito for body, loaded from Google Fonts in `index.html` with system fallbacks). **All colors are CSS custom properties in `src/index.css`** (`--ink`, `--paper`, `--orange`, `--teal`, `--sun`, `--grape`, `--sky`, `--leaf`, each with `-soft`/`-deep` variants) — use tokens, not hex, in new CSS. Shared buttons (`.btn-primary` orange, `.btn-teal`, `.btn-secondary`, `.btn-ghost`, `.btn-sm`) and `.cargando` / `.estado-vacio` live there too. The old blue hex values in pages were remapped to the palette. Light theme only (`color-scheme: light`).
 
 - `DashboardLayout`: fixed sidebar on desktop (no more hover-to-expand), drawer with scrim under 900px, greeting + date + role chip + initials avatar in the topbar. Menu items accept an optional `color`; otherwise they cycle through the palette.
 - `StatCard` takes `accent` as any CSS color (tokens like `var(--teal)` work) via the `--accent` custom property.
@@ -177,7 +184,7 @@ GET    /api/docentes/me/actividades              [docente]
 GET/PUT/DELETE /api/actividades/:id, POST /api/actividades   [docente]
 ```
 
-**Not done / still mock:** the docente `Inicio`/`Cursos`/`Estudiantes`/`Reportes` tabs and all admin dashboards still read `mockData.js`. The old `/estudiante` grades dashboard (and its mock-only pages) was **removed** on 2026-09-26: no `estudiante` accounts can exist on the backend, so it was unreachable. Unused template assets (`App.css`, `hero.png`, `react.svg`, `vite.svg`, `public/icons.svg`) and the now-unused `logo2.png` were removed too. Note `UsuariosAdmin.jsx` still lists mock users (not `/api/usuarios`).
+**Mock data is gone** — see "Data layer: real API only" above. The old `/estudiante` grades dashboard (and its mock-only pages) was **removed** on 2026-09-26: no `estudiante` accounts can exist on the backend, so it was unreachable. Unused template assets (`App.css`, `hero.png`, `react.svg`, `vite.svg`, `public/icons.svg`) and the now-unused `logo2.png` were removed too.
 
 ### Real integration: auth against the live backend — done
 

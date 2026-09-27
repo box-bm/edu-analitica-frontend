@@ -3,14 +3,12 @@ import InicioAdmin from './admin/InicioAdmin';
 import UsuariosAdmin from './admin/UsuariosAdmin';
 import SeccionesAdmin from './admin/SeccionesAdmin';
 import ReportesAdmin from './admin/ReportesAdmin';
-import ConfiguracionAdmin from './admin/ConfiguracionAdmin';
 
 const MENU_ADMIN = [
   { label: 'Inicio', icon: '🏠', content: <InicioAdmin /> },
   { label: 'Usuarios', icon: '👤', content: <UsuariosAdmin /> },
   { label: 'Secciones', icon: '🏫', content: <SeccionesAdmin /> },
   { label: 'Reportes', icon: '📄', content: <ReportesAdmin /> },
-  { label: 'Configuración', icon: '⚙️', content: <ConfiguracionAdmin /> },
 ];
 
 export default function Admin() {

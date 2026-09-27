@@ -174,7 +174,8 @@
 .form-field select,
 .form-field input,
 .form-field textarea,
-select.form-field {
+select.form-field,
+input.form-field {
   padding: 0.6rem 0.8rem;
   border: 2px solid var(--line-strong);
   border-radius: var(--radius-sm);
@@ -192,7 +193,8 @@ select.form-field {
 .form-field select:focus,
 .form-field input:focus,
 .form-field textarea:focus,
-select.form-field:focus {
+select.form-field:focus,
+input.form-field:focus {
   border-color: var(--teal);
   box-shadow: 0 0 0 4px var(--teal-soft);
 }
@@ -374,4 +376,29 @@ select.form-field:focus {
   border-radius: inherit;
   background: var(--color);
   transition: width 0.4s ease;
+}
+
+.texto-suave {
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  margin: 0.15rem 0 0;
+}
+
+.aviso-cerrable {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.buscador {
+  min-width: 240px;
 }

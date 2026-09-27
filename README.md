@@ -32,8 +32,8 @@ Requiere Node `>=22.22.2`.
 ## Cómo se usa
 
 - **Docentes y administración** entran con usuario y contraseña en `/`.
-  - **Docente:** crea grupos por sección (cada uno recibe un código de 6 caracteres), revisa su avance y resultados, y crea actividades propias o usa las del catálogo base.
-  - **Administración:** gestiona usuarios y secciones.
+  - **Docente:** crea grupos por sección (cada uno recibe un código de 6 caracteres), revisa su avance, resultados y reportes, y crea actividades propias o usa las del catálogo base.
+  - **Administración:** gestiona usuarios y secciones, y ve el resumen y los reportes de todo el colegio (con exportación CSV para Colab).
 - **Estudiantes** trabajan en grupo: desde “¿Eres estudiante?” el coordinador escribe el código del grupo en `/grupo`, elige un módulo, resuelve la actividad pregunta a pregunta y ve su resultado con estrellas. La sesión de grupo dura 45 minutos y vive solo en memoria.
 
 ## Estructura
@@ -48,8 +48,9 @@ src/
 ├── pages/
 │   ├── admin/ · docente/   # Secciones de cada panel
 │   └── estudiante/         # Zona de grupos: acceso, módulos, actividad, resultado
-├── utils/                  # Cálculo de estrellas y mensajes
-└── data/mockData.js        # Datos de ejemplo de los tableros que aún no tienen endpoint
+├── hooks/useCarga.js       # Carga de datos con estado de carga/error/reintento
+├── components/reportes/    # Gráficas y tablas de reportes (admin y docente)
+└── utils/                  # Cálculo de estrellas y mensajes
 ```
 
 ## Seguridad
@@ -57,6 +58,8 @@ src/
 - El `accessToken` y el token de grupo viven solo en memoria, nunca en `localStorage`.
 - El refresh token es una cookie `httpOnly` que gestiona el backend.
 - Ocultar botones o rutas en el frontend es solo UX: el backend valida rol y alcance en cada petición.
+
+Todos los datos vienen de la API; no hay datos de ejemplo en el frontend.
 
 ## CI / Deploy
 

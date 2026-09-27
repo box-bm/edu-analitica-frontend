@@ -1,0 +1,24 @@
+.grafica-vacia {
+  color: var(--ink-muted);
+  font-weight: 700;
+  text-align: center;
+  padding: 2.5rem 1rem;
+  margin: 0;
+}
+
+.barra-aciertos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progreso.nivel-inicial { --color: #5cbfb4; }
+.progreso.nivel-medio { --color: #1f9a8f; }
+.progreso.nivel-alto { --color: #0b5f59; }
+
+.recharts-default-tooltip {
+  border-radius: 12px !important;
+  border: 2px solid var(--line) !important;
+  font-family: var(--font-body);
+  font-weight: 700;
+}
