@@ -80,8 +80,8 @@ Shared dashboard UI pieces (`StatCard`, `Badge`, and `widgets.css` with `.panel`
 
 **There is no mock data anymore** — `src/data/mockData.js` was deleted. Every screen reads the backend through a service in `src/services/` (each returns `{ success, data, error }`). Pages load with the `useCarga(cargar)` hook (`src/hooks/useCarga.js`: `{ datos, error, cargando, recargar }`); pass a **stable** loader (module-level function or `useCallback`), otherwise it refetches on every render. Rule going forward: only fall back to mock data for a feature whose backend module doesn't exist yet, and label it as such in the UI.
 
-- Admin: `Inicio` → `GET /api/reportes/resumen`; `Usuarios` → `/api/usuarios` CRUD (create/edit modal, activate/deactivate; own account can't be deactivated or demoted — enforced by the backend too; empty password on edit is not sent); `Secciones` → `/api/secciones`; `Reportes` → `GET /api/reportes/actividades` + CSV export.
-- Docente: `Inicio` → the same resumen endpoint (backend scopes it to the docente's groups); `Grupos`; `Actividades`; `Reportes` → same `ReporteActividades` component as admin.
+- Admin: `Inicio` → `GET /api/reportes/resumen`; `Usuarios` → `/api/usuarios` CRUD (create/edit modal, activate/deactivate; own account can't be deactivated or demoted — enforced by the backend too; empty password on edit is not sent); `Secciones` → `/api/secciones`; `Reportes` → shared `Reportes` component: Módulo 4 by sección/módulo (read-only for admin) + `GET /api/reportes/actividades` + CSV export.
+- Docente: `Inicio` → the same resumen endpoint (backend scopes it to the docente's groups); `Grupos`; `Actividades`; `Reportes` → same `Reportes` component as admin (Módulo 4 view + `ReporteActividades`).
 - Removed because no backend module exists and they contradicted the Módulo 3 model (groups, no individual students, no 0–5 grades): docente `Cursos` and `Estudiantes`, admin `Configuración`.
 - Charts live in `src/components/reportes/` (`GraficasResumen`, `ReporteActividades`, `colores.js`). Colors were validated with the dataviz validator: single series `#149e94`; level ramp (inicial → alto) `#5cbfb4 / #1f9a8f / #0b5f59`. Level thresholds (≥90% alto, ≥60% medio) are the same as `src/utils/estrellas.js` and the backend — change all three together.
 - The CSV download goes through axios with `responseType: 'blob'` (the route needs the `Authorization` header, a plain `<a href>` wouldn't send it); the filename comes from `Content-Disposition`, which the backend exposes via CORS.
@@ -138,7 +138,7 @@ GET                  /api/admin/resumen
 GET/POST/PUT/DELETE /api/actividades   implemented (Módulo 3) — preguntas go inside the activity body, max 10, see Módulo 3 below
 GET           /api/docentes/me/resultados?grado=&modulo=
 GET           /api/reportes/resumen | /actividades | /resultados.csv   ?id_grado=   implemented (2026-09-26), admin + docente
-GET/POST      /api/reportes, /api/reportes/vista-previa, /api/reportes/export, /api/reportes/:id   Módulo 4 — see below (replaces the old /api/reportes/:id/export and /:id/pdf sketches)
+GET/POST      /api/reportes, /api/reportes/vista-previa, /api/reportes/export, /api/reportes/:id   Módulo 4, implemented — see below (replaces the old /api/reportes/:id/export and /:id/pdf sketches)
 GET           /api/usuarios/me   implemented
 ```
 
@@ -187,34 +187,45 @@ GET/PUT/DELETE /api/actividades/:id, POST /api/actividades   [docente]
 
 **Mock data is gone** — see "Data layer: real API only" above. The old `/estudiante` grades dashboard (and its mock-only pages) was **removed** on 2026-09-26: no `estudiante` accounts can exist on the backend, so it was unreachable. Unused template assets (`App.css`, `hero.png`, `react.svg`, `vite.svg`, `public/icons.svg`) and the now-unused `logo2.png` were removed too.
 
-### Módulo 4: Reportes — scoped (2026-09-27), not implemented yet
+### Módulo 4: Reportes — frontend on `feat/modulo-4-reportes` (PR #24), backend on its own `feat/modulo-4-reportes` (2026-09-27)
 
-Closes the reports flow that was a placeholder since Módulo 2. Full scope doc: `alcance-modulo4-reportes.md`. Goals: (1) export results per group/sección as CSV for manual analysis in Colab, (2) register the link of the externally generated PDF (Colab → Google Drive) as a "reporte" in the platform, (3) show an always-available **vista previa** of basic stats computed by the backend (no dependency on Colab), (4) let the docente open the final report.
+Closes the reports flow that was a placeholder since Módulo 2. Full scope doc: `alcance-modulo4-reportes.md`; backend contract in `../edu-analitica-backend/CLAUDE.md` ("Módulo 4"). Goals: (1) export results per sección/módulo as CSV for manual analysis in Colab, (2) register the link of the externally generated PDF (Colab → Google Drive), (3) an always-available **vista previa** computed by the backend (no Colab dependency), (4) open the final report.
 
-**Decision resolved: Colab is manual, not integrated.** Someone downloads the CSV, runs the notebook by hand, uploads the PDF to Drive and pastes the link back. No Google Drive API, no service credentials. The backend **never stores the PDF** (Railway's filesystem is ephemeral) — the `reportes` table only keeps `url_pdf` (`id, id_docente, id_seccion, id_modulo, url_pdf VARCHAR(500), generado_en`).
+**Colab is manual, not integrated.** Someone downloads the CSV, runs the notebook by hand, uploads the PDF to Drive and pastes the link back. No Google Drive API. The backend **never stores the PDF** (Railway's filesystem is ephemeral) — `reportes` only keeps `url_pdf`.
 
-**Screen:** docente `Reportes` (today `src/pages/docente/ReportesDocente.jsx`, which renders the shared `ReporteActividades` — extend it or add the Módulo 4 pieces alongside, don't break the admin `Reportes` tab that reuses the same component):
-- Filters: sección, módulo (note: the existing reportes endpoints filter by `id_grado`; Módulo 4 filters by `id_seccion` + `id_modulo`). Sección options come from `GET /api/secciones` (allowed for docente), módulos from `GET /api/modulos`.
-- **Vista previa** (always available): cards/table with average score per group, activities completed, best/worst performing group — from `GET /api/reportes/vista-previa`, not from a PDF. Needs a reasonable empty state when the sección/módulo has no solved activities yet.
-- **"Exportar CSV"** → `GET /api/reportes/export`, same blob download pattern as the current CSV (`responseType: 'blob'`, filename from `Content-Disposition`). Expected columns: id_grupo, sección, actividad, puntaje, fecha.
-- **"Registrar reporte"** form: paste the Drive link, tied to the selected sección/módulo → `POST /api/reportes`. Validate client-side that it's a well-formed http(s) URL (the backend validates with Zod too — surface its 400 message). Don't require it to be a Drive URL.
-- **Historial**: table with fecha, sección, módulo and an "Abrir PDF" button, newest first, filtered by sección/módulo. The link opens in a new tab (`target="_blank" rel="noopener noreferrer"`) — never embed the PDF in an iframe (Drive permissions make that painful).
+**Permissions by role — `src/utils/permisos.js` (`PERMISOS_REPORTES`, `permisosReportes(rol)`):**
+- `administrador`: `ver` (vista previa, export, history of every docente) over **all** active secciones; **cannot register**.
+- `docente`: `ver` + `registrar`, only over secciones where they have groups (backend: 403 elsewhere, and history/detail filtered to their own reportes).
+- Any other role gets nothing. To enable a role, add it to the table **by hand** and to `roleMiddleware` in the backend's `reportes.routes.ts` — the table is UX only, the backend is the real gate.
 
-**Usage flow:** filter → see vista previa → Exportar CSV → run the notebook in Colab (outside the platform) → upload PDF to Drive → paste link in "Registrar reporte" → it shows up in the historial.
+**Frontend implementation:**
+- Both the admin and docente `Reportes` tabs render `src/components/reportes/Reportes.jsx`: a view switch between "Por sección y módulo" (Módulo 4, default, only if the role has `ver`) and "Aciertos por actividad" (the pre-existing `ReporteActividades`, unchanged).
+- `src/components/reportes/seccion/`: `ReportesSeccion` (filters; secciones from `GET /api/docentes/me/grupos` for `'propias'` or `GET /api/secciones` for `'todas'`; módulos from `GET /api/modulos` filtered to the sección's grado; defaults to the first of each), `PanelReporte` (mounted with `key` per filter; hides the register form when the role can't register), `VistaPrevia`, `RegistrarReporte`, `HistorialReportes`, `formato.js`.
+- `src/utils/urlPdf.js` (`esUrlPdfValida`): http(s) only, ≤500 chars. Checked before POSTing **and** when rendering history — a stored non-http link shows "Link no válido", never an `<a>`. Links open in a new tab (`target="_blank" rel="noopener noreferrer"`), never embedded.
+- `reportesService`: `vistaPrevia`, `exportarCsv`, `historial`, `registrar` (shared blob-download helper with the old `descargarCsv`). No `detalle(id)` call yet — history rows already carry `urlPdf`.
+- Tests: `tests/ReportesSeccion.test.jsx` (docente + admin), `tests/urlPdf.test.js`, `tests/permisos.test.js`.
+- **Not yet validated against the real backend** (unit tests mock the services with the backend's real shapes). Do a browser pass against the backend branch before merging PR #24.
 
-**API contract (planned — confirm shapes with Antony before relying on them):**
+**API contract (implemented in the backend):**
 ```
-GET  /api/reportes/vista-previa?id_seccion=&id_modulo=   [docente]  aggregated stats computed on the fly
-GET  /api/reportes/export?id_seccion=&id_modulo=         [docente]  CSV download
-POST /api/reportes                                       [docente]  {id_seccion, id_modulo, url_pdf}
-GET  /api/reportes?id_seccion=&id_modulo=                [docente]  history, newest first
-GET  /api/reportes/:id                                   [docente]  detail incl. url_pdf
+GET  /api/reportes/vista-previa?id_seccion=&id_modulo=   [admin, docente]  both params required
+  → { seccion{id,nombreSeccion,grado}, modulo{id,nombreModulo,icono}, hayResultados,
+      totales{grupos,intentos,promedioPuntaje},
+      grupos[{idGrupo,nombreGrupo,activo,intentos,promedioPuntaje,actividadesCompletadas,actividadesDisponibles,ultimoIntento}],
+      mejorGrupo{idGrupo,nombreGrupo,promedioPuntaje}|null, peorGrupo|null (null unless ≥2 groups have attempts) }
+GET  /api/reportes/export?id_seccion=&id_modulo=         [admin, docente]  CSV: id_grupo,grupo,grado,seccion,modulo,actividad,puntaje,puntaje_total,porcentaje,fecha
+POST /api/reportes                                       [docente]         body camelCase {idSeccion, idModulo, urlPdf} → 201 Reporte
+GET  /api/reportes?id_seccion=&id_modulo=                [admin, docente]  Reporte[] newest first
+GET  /api/reportes/:id                                   [admin, docente]  Reporte (404 for another docente's)
+Reporte = { id, urlPdf, generadoEn, seccion{id,nombreSeccion,grado}, modulo{id,nombreModulo}, docente{id,nombreCompleto} }
 ```
-Heads-up for the backend: `GET /api/reportes/:id` must be registered after the literal routes (`resumen`, `actividades`, `resultados.csv`, `vista-previa`, `export`) or it will swallow them.
+Gotchas: `promedioPuntaje` is a 0–100 percentage. In `/api/reportes` responses `seccion.grado` is a **string**, while `/api/secciones` and `/api/docentes/me/grupos` send it as an object — `formato.etiquetaSeccion` handles both. Query params stay snake_case (`id_seccion`), bodies are camelCase like the rest of the API (the scope doc's snake_case body was dropped).
 
-**QA minimum cases:** vista previa correct with existing results and a sane empty state without them; CSV has the expected columns; invalid URL (plain text) → validation error; historial filters by sección/módulo; a docente can't see/register reports for secciones that aren't theirs (if that ownership rule is confirmed — see open decisions).
+**Usage flow:** filter → vista previa → Exportar CSV → run the notebook in Colab (outside the platform) → upload PDF to Drive → paste link in "Registrar reporte" → appears in the historial.
 
-**Out of scope:** automating the CSV → Colab upload or PDF download (Drive API), and generating charts/analysis inside the platform for this flow (that lives in the Colab notebook).
+**QA minimum cases:** vista previa correct with results and an empty state without them; CSV has the expected columns; invalid URL (plain text, `javascript:`) → validation error; historial filtered by sección/módulo; a docente can't see/register reports for secciones that aren't theirs; admin sees everything but has no register form.
+
+**Out of scope:** automating the CSV → Colab upload or PDF download (Drive API), and charts/analysis inside the platform for this flow (lives in the Colab notebook).
 
 ### Real integration: auth against the live backend — done
 
@@ -243,7 +254,7 @@ Unit/integration coverage now exists via Vitest — see "Testing" under Commands
 - Whether docente accounts (created by admin with a temporary password) require a forced password change on first login.
 - Final copy/tone for the student-facing result screen — a first version is implemented in `src/utils/estrellas.js` ("¡Increíble!" / "¡Muy bien!" / "¡Buen intento!"); worth a review with Josue.
 - ~~Colab integration~~ **resolved (Módulo 4): manual flow**, only the PDF link is stored.
-- Módulo 4: are reports visible only to the docente who registered them, or to any docente/admin? Affects the `GET /api/reportes` filter and whether `Reportes` needs a "mis reportes" vs "todos" distinction. Confirm with Josue.
+- Módulo 4 visibility — **resolved for now**: admin reads everything, docente reads/registers only their own; other roles are enabled manually in `src/utils/permisos.js` + the backend. Still open: whether docentes should see each other's reports for a shared sección.
 - Módulo 4: who runs the Colab notebook in practice during the pilot — each docente, or centralized (e.g. Antony)?
 
 ## Code conventions

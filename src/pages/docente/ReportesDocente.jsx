@@ -1,11 +1,7 @@
-import useCarga from '../../hooks/useCarga';
-import ReporteActividades from '../../components/reportes/ReporteActividades';
-import seccionesService from '../../services/seccionesService';
+import Reportes from '../../components/reportes/Reportes';
 
-const cargarGrados = () => seccionesService.listarGradosConSecciones();
-
-// Mismo reporte que admin, pero el backend lo limita a los grupos del docente.
+// Mismo componente que admin; el backend limita todo a los grupos del docente
+// y src/utils/permisos.js decide qué puede hacer cada rol.
 export default function ReportesDocente() {
-  const { datos: grados } = useCarga(cargarGrados);
-  return <ReporteActividades grados={grados ?? []} />;
+  return <Reportes />;
 }
