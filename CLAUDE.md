@@ -28,6 +28,8 @@ npm run preview    # preview the production build
 npm run lint       # eslint .
 npm test           # vitest run — unit/integration tests, no network, no dev server needed
 npm run test:watch # vitest in watch mode
+npm run e2e        # cypress run — E2E against the real system (needs cypress.env.json, see "Cypress E2E" below)
+npm run e2e:open   # same, with the Cypress UI
 ```
 
 **Testing (2026-09-19):** Vitest + React Testing Library, configured in `vite.config.js` (`test` block) with `tests/setup.js` loading `@testing-library/jest-dom`. Chosen over Cypress E2E (the original plan, see "Planned testing setup" below) because it needs no running dev server or live backend — tests mock `userService` and use a fake axios adapter, so they run in under a second and are safe for CI. Current coverage (`tests/`):
@@ -239,14 +241,16 @@ This piece of Módulo 2 is closed. The `Secciones` admin page is done (`Seccione
 
 This round of integration is scoped to auth + Secciones only — the rest of the Módulo 2 backend surface (`actividades`, `reportes`) stays out of scope for now. The student/group model that was previously blocking that work is now resolved — see "Módulo 3: actividades y acceso por grupo" above for what that unblocks.
 
-### Testing setup — Vitest done (2026-09-19), Cypress E2E still not started
+### Cypress E2E — done (2026-09-27, #8)
 
-Unit/integration coverage now exists via Vitest — see "Testing" under Commands above. That covers the auth logic fast and without infra, but it is **not** a substitute for the originally-planned Cypress E2E suite, which is still worth doing for a true "click through the real app" regression check:
+Cypress 16 (`cypress.config.js`, JS like the rest of the repo) drives the **real** system — frontend + backend + DB, no mocks — following the project's test matrix. One spec per module in `cypress/e2e/` (`m1-auth`, `m2-admin`, `m2-actividades`, `m3-grupos`, `m4-reportes`); each test name carries its matrix ID. 23 tests, **all passing in Chrome against the live deploy** (GitHub Pages ↔ Railway) on 2026-09-27. Full-system QA tracking (Cypress + Supertest + manual cases) is issue #27. How to run: README "Tests E2E (Cypress)".
 
-- Install Cypress in this repo; `cypress.config.ts` with a configurable `baseUrl` (local vs. the real deploy) — note this implies a `.ts` config file even though the rest of the app is `.jsx`, since Cypress config is commonly TypeScript regardless of app language.
-- First real spec: `cypress/e2e/auth.cy.ts` covering login → role landing → logout against the real integrated backend — the same loop already validated manually in "Auth: real integration fixed" above, just automated.
-- A fixed test user (e.g. `admin.test`) seeded in the backend's dedicated testing DB branch, so tests don't depend on real school data.
-- Document how to run tests in `TESTING.md` (or a section here) so the whole team can run them, not just QA.
+- Config: `E2E_BASE_URL` (frontend, defaults to the local dev server), `E2E_API_URL` (the backend THAT frontend was built against). Credentials in `cypress.env.json` (gitignored; template `cypress.env.example.json`), read with `cy.env()` — Cypress 16 removed `Cypress.env()`; public values go through `expose` / `Cypress.expose()`.
+- Data is prepared through the API (`cypress/support/datos.js`) with the accessToken from `/api/auth/refresh`. M3/M4 create their own fresh sección so assertions (best/worst group, CSV rows) are exact on a shared DB. Everything is E2E-prefixed and soft-deleted in `after()`; Módulo 4 report links can't be deleted and stay on the inactive E2E sección.
+- **Login rate limit gotcha:** `/api/auth/login` allows 5 attempts per IP per 15 min, *successes included*. `cy.loginAs` caches sessions (`cy.session`, `cacheAcrossSpecs`) and persists the refresh cookie (doesn't rotate, valid 7 days) in `cypress/.sesiones.json` (gitignored), so a full run only spends the 3 logins in `m1-auth`. A 429 fails with an explicit message — wait 15 min.
+- **GitHub Pages gotcha:** deep links (`/docente`) are served by the `404.html` SPA fallback with HTTP 404; `cy.visit` is overwritten with `failOnStatusCode: false`.
+- Not in Cypress (no frontend screen or not automatable): M2-02/M2-03 (módulos/grados CRUD → Supertest), M1-12, M3-08, M3-10, M4-07, TX-* (manual/Supertest). The matrix's M1-13 still mentions `/estudiante`, which no longer exists.
+- Not in CI yet: it needs a live backend and credentials (would be `CYPRESS_*` secrets + a test backend).
 
 ### Open decisions (per project planning, unresolved as of last sync)
 
@@ -262,5 +266,5 @@ Unit/integration coverage now exists via Vitest — see "Testing" under Commands
 - Modern JS (ES2020+), no TypeScript — use JSDoc on props where it helps readability, since there's no compile-time type checking.
 - Function components with hooks, no classes. One component per file.
 - Frontend form validation is UX only, **never the only security layer** — the backend revalidates everything.
-- Every critical flow (login, solving an activity, registering a report) needs at least one automated test before merging to `main` (Vitest today; Cypress once it's set up).
+- Every critical flow (login, solving an activity, registering a report) needs at least one automated test before merging to `main` (Vitest for logic, Cypress E2E for the flow).
 - Don't assume API changes without confirming with Antony. If an endpoint returns a shape different from what's documented here, this file is stale — flag it so both repos get corrected.
