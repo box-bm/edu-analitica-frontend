@@ -8,17 +8,24 @@ const nivelClase = (p) => (p >= 90 ? 'alto' : p >= 60 ? 'medio' : 'inicial');
 // Reporte por actividad + preguntas con más errores + exportación CSV.
 // Lo usan admin (todos los grupos) y docente (sus grupos); el alcance lo
 // aplica el backend según el rol.
-export default function ReporteActividades({ grados = [] }) {
+export default function ReporteActividades({ grados = [], ciclos = [] }) {
   const [idGrado, setIdGrado] = useState('');
+  const [ciclo, setCiclo] = useState('');
   const [descargando, setDescargando] = useState(false);
   const [aviso, setAviso] = useState(null);
 
-  const cargar = useCallback(() => reportesService.porActividad(idGrado || undefined), [idGrado]);
+  const cargar = useCallback(
+    () => reportesService.porActividad({ idGrado: idGrado || undefined, ciclo: ciclo || undefined }),
+    [idGrado, ciclo]
+  );
   const { datos, error, cargando, recargar } = useCarga(cargar);
 
   const descargar = async () => {
     setDescargando(true);
-    const result = await reportesService.descargarCsv(idGrado || undefined);
+    const result = await reportesService.descargarCsv({
+      idGrado: idGrado || undefined,
+      ciclo: ciclo || undefined,
+    });
     setDescargando(false);
     setAviso(result.success ? null : result.error);
   };
@@ -32,6 +39,16 @@ export default function ReporteActividades({ grados = [] }) {
             <p className="texto-suave">De menor a mayor: arriba lo que más conviene reforzar.</p>
           </div>
           <div className="filtros">
+            {ciclos.length > 1 && (
+              <select className="form-field" value={ciclo} onChange={(e) => setCiclo(e.target.value)} aria-label="Filtrar por ciclo escolar">
+                <option value="">Todos los ciclos</option>
+                {ciclos.map((c) => (
+                  <option key={c} value={String(c)}>
+                    Ciclo {c}
+                  </option>
+                ))}
+              </select>
+            )}
             {grados.length > 0 && (
               <select className="form-field" value={idGrado} onChange={(e) => setIdGrado(e.target.value)} aria-label="Filtrar por grado">
                 <option value="">Todos los grados</option>
