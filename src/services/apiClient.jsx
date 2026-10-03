@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_TIMEOUT_MS } from './timeout';
 
 
 // URL del backend: VITE_API_URL (.env en local, secret del workflow de deploy).
@@ -10,7 +11,7 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  timeout: 10000,
+  timeout: API_TIMEOUT_MS,
   // Necesario para que viaje la cookie httpOnly del refresh token entre
   // dominios (el backend tiene CORS con credentials: true).
   withCredentials: true,

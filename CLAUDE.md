@@ -236,6 +236,7 @@ The Módulo 1 auth flow — login, refresh, logout, protected routes, and `usuar
 
 - `apiClient`'s `baseURL` comes from `VITE_API_URL`, `withCredentials: true` is set, and the backend's refresh cookie (`sameSite=none; secure=true` in production) is correctly sent/received cross-domain — verified: login sets the cookie, refresh reads it and returns a valid new token, logout revokes it server-side.
 - CORS is correctly scoped (`Access-Control-Allow-Credentials: true`, `Access-Control-Allow-Origin` matching this deploy's exact GitHub Pages origin) — confirmed via response headers.
+- **Backend is serverless since 2026-10-03** (Railway App Sleeping, see the backend's CLAUDE.md "Deployment"): the first request after ~5–10 min idle pays a cold start (container boot + Neon wake). Both axios clients use a 30 s timeout from `src/services/timeout.js` (was 10 s) to absorb it. The backend notes the first call may even get a 502 — there is no retry on the frontend yet.
 - Infra is live end-to-end: Neon Postgres + Railway deploy on the backend (test users, roles, and `grados`/`secciones` data already seeded), GitHub Pages on this repo.
 
 This piece of Módulo 2 is closed. The `Secciones` admin page is done (`SeccionesAdmin.jsx`); next active frontend work is Módulo 4 (Reportes, above).

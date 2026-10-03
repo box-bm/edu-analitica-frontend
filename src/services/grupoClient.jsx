@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_TIMEOUT_MS } from './timeout';
 
 // Cliente separado de apiClient a propósito: el token de grupo (Módulo 3) es
 // otra sesión, de alcance limitado y sin refresh. Mezclarlo con el
@@ -9,7 +10,7 @@ const grupoClient = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
-  timeout: 10000,
+  timeout: API_TIMEOUT_MS,
 });
 
 // Solo en memoria, nunca localStorage (mismo criterio que apiClient). Un
