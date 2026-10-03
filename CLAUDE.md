@@ -87,7 +87,8 @@ Shared dashboard UI pieces (`StatCard`, `Badge`, and `widgets.css` with `.panel`
 - Removed because no backend module exists and they contradicted the Módulo 3 model (groups, no individual students, no 0–5 grades): docente `Cursos` and `Estudiantes`, admin `Configuración`.
 - Charts live in `src/components/reportes/` (`GraficasResumen`, `ReporteActividades`, `colores.js`). Colors were validated with the dataviz validator: single series `#149e94`; level ramp (inicial → alto) `#5cbfb4 / #1f9a8f / #0b5f59`. Level thresholds (≥90% alto, ≥60% medio) are the same as `src/utils/estrellas.js` and the backend — change all three together.
 - The CSV download goes through axios with `responseType: 'blob'` (the route needs the `Authorization` header, a plain `<a href>` wouldn't send it); the filename comes from `Content-Disposition`, which the backend exposes via CORS.
-- Grado filters use `seccionesService.listarGradosConSecciones()` — the docente can't read `/api/grados`.
+- Grado filters use `seccionesService.listarGradosConSecciones()` — the docente can't read `/api/grados`. It returns `{ grados, ciclos }` (ciclos newest first).
+- **Grados + ciclo escolar (2026-10-03, branch `feat/grados-ciclo`, needs the backend branch of the same name):** the admin `Secciones` tab now has a `GradosPanel` on top (create / rename / reorder / activate-deactivate via `POST`/`PUT /api/grados`) — before this the school could only see the seeded "1ro". The year lives on the **sección** (`ciclo`), not the grado: the secciones table has a Ciclo column and filter (defaults to the current year), and the create modal takes a ciclo (immutable on edit). Inactive grados are hidden from the create select. `etiquetaSeccion` (`formato.js`, now also used by `Grupos.jsx`) appends the ciclo. `ReporteActividades` shows a ciclo filter when there's more than one; `reportesService.resumen/porActividad/descargarCsv` take `{ idGrado, ciclo }`. Creating a grado whose name starts with 1/2/3 seeds its base catalog on the backend.
 
 ### Layout gotcha
 
@@ -134,13 +135,13 @@ POST /api/auth/logout   → 204
 
 GET/POST/PUT/DELETE /api/usuarios
 GET/POST/PUT         /api/modulos
-GET/POST             /api/grados          implemented on backend, admin-only
-GET/POST/PUT/DELETE  /api/secciones?id_grado=   implemented; admin page in SeccionesAdmin.jsx; GET also allowed for docente (Módulo 3)
+GET/POST/PUT         /api/grados          admin-only; {nombreGrado, orden, activo}; UI in GradosPanel.jsx
+GET/POST/PUT/DELETE  /api/secciones?idGrado=&ciclo=   admin page in SeccionesAdmin.jsx; sección has `ciclo` (year); GET also allowed for docente (Módulo 3)
 GET                  /api/admin/resumen
 
 GET/POST/PUT/DELETE /api/actividades   implemented (Módulo 3) — preguntas go inside the activity body, max 10, see Módulo 3 below
 GET           /api/docentes/me/resultados?grado=&modulo=
-GET           /api/reportes/resumen | /actividades | /resultados.csv   ?id_grado=   implemented (2026-09-26), admin + docente
+GET           /api/reportes/resumen | /actividades | /resultados.csv   ?idGrado=&ciclo=   implemented (2026-09-26), admin + docente
 GET/POST      /api/reportes, /api/reportes/vista-previa, /api/reportes/export, /api/reportes/:id   Módulo 4, implemented — see below (replaces the old /api/reportes/:id/export and /:id/pdf sketches)
 GET           /api/usuarios/me   implemented
 ```

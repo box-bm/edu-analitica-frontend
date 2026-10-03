@@ -7,7 +7,7 @@ import ReporteActividades from './ReporteActividades';
 import ReportesSeccion from './seccion/ReportesSeccion';
 import './seccion/reportes-seccion.css';
 
-const cargarGrados = () => seccionesService.listarGradosConSecciones();
+const cargarFiltros = () => seccionesService.listarGradosConSecciones();
 
 const VISTAS = [
   { id: 'seccion', label: 'Por sección y módulo' },
@@ -22,9 +22,11 @@ export default function Reportes() {
   const { user } = useAuth();
   const { ver } = permisosReportes(user?.rol);
   const [vista, setVista] = useState('seccion');
-  const { datos: grados } = useCarga(cargarGrados);
+  const { datos: filtros } = useCarga(cargarFiltros);
 
-  const porActividad = <ReporteActividades grados={grados ?? []} />;
+  const porActividad = (
+    <ReporteActividades grados={filtros?.grados ?? []} ciclos={filtros?.ciclos ?? []} />
+  );
   if (!ver) return porActividad;
 
   return (

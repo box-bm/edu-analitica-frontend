@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import Badge from '../../components/dashboard/Badge';
 import Modal from '../../components/dashboard/Modal';
-import seccionesService from '../../services/seccionesService';
+import seccionesService, { ciclosDe, porOrden } from '../../services/seccionesService';
+import GradosPanel from './GradosPanel';
 
-const FORM_VACIO = { idGrado: '', nombreSeccion: '' };
+const CICLO_ACTUAL = new Date().getFullYear();
+const FORM_VACIO = { idGrado: '', nombreSeccion: '', ciclo: String(CICLO_ACTUAL) };
 
 export default function SeccionesAdmin() {
   const [grados, setGrados] = useState([]);
@@ -11,6 +13,9 @@ export default function SeccionesAdmin() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [filtroGrado, setFiltroGrado] = useState('Todos');
+  // Por defecto, el ciclo en curso: así las secciones de años anteriores no se
+  // mezclan con las de este año.
+  const [filtroCiclo, setFiltroCiclo] = useState(String(CICLO_ACTUAL));
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [seccionEditando, setSeccionEditando] = useState(null);
@@ -41,7 +46,7 @@ export default function SeccionesAdmin() {
         setLoadError(resSecciones.error);
       } else {
         setLoadError(null);
-        setGrados(resGrados.data);
+        setGrados([...resGrados.data].sort(porOrden));
         setSecciones(resSecciones.data);
       }
 
@@ -61,19 +66,42 @@ export default function SeccionesAdmin() {
     setIntentos((n) => n + 1);
   };
 
-  const visibles =
-    filtroGrado === 'Todos' ? secciones : secciones.filter((s) => String(s.idGrado) === filtroGrado);
+  const gradosActivos = grados.filter((g) => g.activo);
+  // El ciclo en curso aparece aunque todavía no tenga secciones.
+  const ciclos = ciclosDe([...secciones, { ciclo: CICLO_ACTUAL }]);
+
+  const visibles = secciones.filter(
+    (s) =>
+      (filtroGrado === 'Todos' || String(s.idGrado) === filtroGrado) &&
+      (filtroCiclo === 'Todos' || String(s.ciclo) === filtroCiclo)
+  );
+
+  const gradoGuardado = (grado) => {
+    setGrados((prev) => {
+      const existe = prev.some((g) => g.id === grado.id);
+      const lista = existe ? prev.map((g) => (g.id === grado.id ? grado : g)) : [...prev, grado];
+      return lista.sort(porOrden);
+    });
+    // El nombre del grado se muestra en cada sección.
+    setSecciones((prev) =>
+      prev.map((s) => (s.idGrado === grado.id ? { ...s, grado: { ...s.grado, ...grado } } : s))
+    );
+  };
 
   const abrirCrear = () => {
     setSeccionEditando(null);
-    setForm({ idGrado: grados[0] ? String(grados[0].id) : '', nombreSeccion: '' });
+    setForm({
+      idGrado: gradosActivos[0] ? String(gradosActivos[0].id) : '',
+      nombreSeccion: '',
+      ciclo: filtroCiclo === 'Todos' ? String(CICLO_ACTUAL) : filtroCiclo,
+    });
     setFormError(null);
     setModalAbierto(true);
   };
 
   const abrirEditar = (seccion) => {
     setSeccionEditando(seccion);
-    setForm({ idGrado: String(seccion.idGrado), nombreSeccion: seccion.nombreSeccion });
+    setForm({ idGrado: String(seccion.idGrado), nombreSeccion: seccion.nombreSeccion, ciclo: String(seccion.ciclo) });
     setFormError(null);
     setModalAbierto(true);
   };
@@ -92,7 +120,7 @@ export default function SeccionesAdmin() {
 
     const resultado = seccionEditando
       ? await seccionesService.actualizar(seccionEditando.id, { nombreSeccion })
-      : await seccionesService.crear({ idGrado: Number(form.idGrado), nombreSeccion });
+      : await seccionesService.crear({ idGrado: Number(form.idGrado), nombreSeccion, ciclo: Number(form.ciclo) });
 
     if (!resultado.success) {
       setFormError(resultado.error);
@@ -141,116 +169,150 @@ export default function SeccionesAdmin() {
   }
 
   return (
-    <div className="panel">
-      <div className="section-actions">
-        <h3 className="panel-title" style={{ margin: 0 }}>
-          Secciones por grado
-        </h3>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <select
-            className="form-field"
-            style={{ minWidth: 160 }}
-            value={filtroGrado}
-            onChange={(e) => setFiltroGrado(e.target.value)}
-          >
-            <option value="Todos">Todos los grados</option>
-            {grados.map((g) => (
-              <option key={g.id} value={String(g.id)}>
-                {g.nombreGrado}
-              </option>
-            ))}
-          </select>
-          <button className="btn-primary" onClick={abrirCrear} disabled={grados.length === 0}>
-            + Nueva sección
-          </button>
+    <div>
+      <GradosPanel grados={grados} onGuardado={gradoGuardado} />
+
+      <div className="panel">
+        <div className="section-actions">
+          <h3 className="panel-title" style={{ margin: 0 }}>
+            Secciones por ciclo y grado
+          </h3>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <select
+              className="form-field"
+              style={{ minWidth: 140 }}
+              value={filtroCiclo}
+              onChange={(e) => setFiltroCiclo(e.target.value)}
+              aria-label="Filtrar por ciclo escolar"
+            >
+              <option value="Todos">Todos los ciclos</option>
+              {ciclos.map((c) => (
+                <option key={c} value={String(c)}>
+                  Ciclo {c}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Filtrar por grado"
+              className="form-field"
+              style={{ minWidth: 160 }}
+              value={filtroGrado}
+              onChange={(e) => setFiltroGrado(e.target.value)}
+            >
+              <option value="Todos">Todos los grados</option>
+              {grados.map((g) => (
+                <option key={g.id} value={String(g.id)}>
+                  {g.nombreGrado}
+                </option>
+              ))}
+            </select>
+            <button className="btn-primary" onClick={abrirCrear} disabled={gradosActivos.length === 0}>
+              + Nueva sección
+            </button>
+          </div>
         </div>
-      </div>
 
-      {grados.length === 0 && (
-        <p className="form-feedback" style={{ color: '#8390a8' }}>
-          No hay grados registrados todavía — crea un grado antes de poder agregar secciones.
-        </p>
-      )}
+        {gradosActivos.length === 0 && (
+          <p className="form-feedback" style={{ color: '#8390a8' }}>
+            No hay grados activos — crea o activa un grado antes de poder agregar secciones.
+          </p>
+        )}
 
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Grado</th>
-            <th>Sección</th>
-            <th>Estado</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {visibles.map((s) => (
-            <tr key={s.id}>
-              <td>{s.grado?.nombreGrado}</td>
-              <td>{s.nombreSeccion}</td>
-              <td>
-                <Badge>{s.activa ? 'Activo' : 'Inactivo'}</Badge>
-              </td>
-              <td style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="btn-secondary" onClick={() => abrirEditar(s)}>
-                  Editar
-                </button>
-                <button className="btn-primary" onClick={() => alternarActiva(s)}>
-                  {s.activa ? 'Desactivar' : 'Activar'}
-                </button>
-              </td>
-            </tr>
-          ))}
-          {visibles.length === 0 && (
+        <table className="data-table">
+          <thead>
             <tr>
-              <td colSpan={4} style={{ color: '#8390a8' }}>
-                No hay secciones para este filtro.
-              </td>
+              <th>Ciclo</th>
+              <th>Grado</th>
+              <th>Sección</th>
+              <th>Estado</th>
+              <th></th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {visibles.map((s) => (
+              <tr key={s.id}>
+                <td>{s.ciclo}</td>
+                <td>{s.grado?.nombreGrado}</td>
+                <td>{s.nombreSeccion}</td>
+                <td>
+                  <Badge>{s.activa ? 'Activo' : 'Inactivo'}</Badge>
+                </td>
+                <td style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn-secondary" onClick={() => abrirEditar(s)}>
+                    Editar
+                  </button>
+                  <button className="btn-primary" onClick={() => alternarActiva(s)}>
+                    {s.activa ? 'Desactivar' : 'Activar'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {visibles.length === 0 && (
+              <tr>
+                <td colSpan={5} style={{ color: '#8390a8' }}>
+                  No hay secciones para este filtro.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
 
-      {modalAbierto && (
-        <Modal title={seccionEditando ? 'Editar sección' : 'Nueva sección'} onClose={cerrarModal}>
-          <form className="dashboard-form" style={{ flexDirection: 'column', alignItems: 'stretch' }} onSubmit={guardar}>
-            <label className="form-field">
-              Grado
-              <select
-                value={form.idGrado}
-                onChange={(e) => setForm({ ...form, idGrado: e.target.value })}
-                disabled={!!seccionEditando}
-                required
-              >
-                {grados.map((g) => (
-                  <option key={g.id} value={String(g.id)}>
-                    {g.nombreGrado}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="form-field">
-              Nombre de la sección
-              <input
-                value={form.nombreSeccion}
-                onChange={(e) => setForm({ ...form, nombreSeccion: e.target.value })}
-                placeholder="Ej: A, B, 1A"
-                maxLength={5}
-                required
-              />
-            </label>
+        {modalAbierto && (
+          <Modal title={seccionEditando ? 'Editar sección' : 'Nueva sección'} onClose={cerrarModal}>
+            <form className="dashboard-form" style={{ flexDirection: 'column', alignItems: 'stretch' }} onSubmit={guardar}>
+              <label className="form-field">
+                Grado
+                <select
+                  value={form.idGrado}
+                  onChange={(e) => setForm({ ...form, idGrado: e.target.value })}
+                  disabled={!!seccionEditando}
+                  required
+                >
+                  {/* Al editar, el grado de la sección puede estar inactivo. */}
+                  {(seccionEditando ? grados : gradosActivos).map((g) => (
+                    <option key={g.id} value={String(g.id)}>
+                      {g.nombreGrado}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="form-field">
+                Ciclo escolar
+                <input
+                  type="number"
+                  min={2000}
+                  max={2100}
+                  value={form.ciclo}
+                  onChange={(e) => setForm({ ...form, ciclo: e.target.value })}
+                  disabled={!!seccionEditando}
+                  required
+                />
+              </label>
+              <label className="form-field">
+                Nombre de la sección
+                <input
+                  value={form.nombreSeccion}
+                  onChange={(e) => setForm({ ...form, nombreSeccion: e.target.value })}
+                  placeholder="Ej: A, B, 1A"
+                  maxLength={5}
+                  required
+                />
+              </label>
 
-            {formError && <p className="form-error">{formError}</p>}
+              {formError && <p className="form-error">{formError}</p>}
 
-            <div className="modal-actions">
-              <button type="button" className="btn-secondary" onClick={cerrarModal} disabled={guardando}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn-primary" disabled={guardando}>
-                {guardando ? 'Guardando…' : 'Guardar'}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={cerrarModal} disabled={guardando}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn-primary" disabled={guardando}>
+                  {guardando ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import Modal from '../../components/dashboard/Modal';
+import { etiquetaSeccion } from '../../components/reportes/seccion/formato';
 import StatCard from '../../components/dashboard/StatCard';
 import gruposService from '../../services/gruposService';
 import './docente.css';
 
 const FORM_VACIO = { idSeccion: '', nombreGrupo: '' };
 
-const etiquetaSeccion = (s) => `${s.grado?.nombreGrado ?? ''} · Sección ${s.nombreSeccion}`;
 
 const fecha = new Intl.DateTimeFormat('es-GT', {
   day: 'numeric',

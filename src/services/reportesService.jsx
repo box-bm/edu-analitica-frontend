@@ -5,7 +5,10 @@ const error = (err, porDefecto) => ({
   error: err.response?.data?.message || porDefecto,
 });
 
-const params = (idGrado) => (idGrado ? { idGrado } : {});
+const params = ({ idGrado, ciclo } = {}) => ({
+  ...(idGrado ? { idGrado } : {}),
+  ...(ciclo ? { ciclo } : {}),
+});
 
 const paramsFiltro = ({ idSeccion, idModulo } = {}) => ({
   ...(idSeccion ? { idSeccion } : {}),
@@ -34,26 +37,26 @@ async function descargar(ruta, query, nombrePorDefecto) {
 // Admin ve todos los grupos y el docente solo los suyos: lo decide el backend
 // con el rol del token, no hay que pasar nada distinto desde aquí.
 class ReportesService {
-  async resumen(idGrado) {
+  async resumen(filtro) {
     try {
-      const response = await apiClient.get('/api/reportes/resumen', { params: params(idGrado) });
+      const response = await apiClient.get('/api/reportes/resumen', { params: params(filtro) });
       return { success: true, data: response.data };
     } catch (err) {
       return error(err, 'No se pudo cargar el resumen');
     }
   }
 
-  async porActividad(idGrado) {
+  async porActividad(filtro) {
     try {
-      const response = await apiClient.get('/api/reportes/actividades', { params: params(idGrado) });
+      const response = await apiClient.get('/api/reportes/actividades', { params: params(filtro) });
       return { success: true, data: response.data };
     } catch (err) {
       return error(err, 'No se pudo cargar el reporte');
     }
   }
 
-  async descargarCsv(idGrado) {
-    return descargar('/api/reportes/resultados.csv', params(idGrado), 'resultados.csv');
+  async descargarCsv(filtro) {
+    return descargar('/api/reportes/resultados.csv', params(filtro), 'resultados.csv');
   }
 
   // --- Módulo 4: reportes por sección y módulo ---------------------------
