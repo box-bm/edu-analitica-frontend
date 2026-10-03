@@ -22,7 +22,7 @@ Team: Jose (frontend, owner of this repo) · Antony (backend) · María José (Q
 ## Commands
 
 ```bash
-npm run dev        # start Vite dev server (http://localhost:5173/edu-analitica-frontend/)
+npm run dev        # start Vite dev server (http://localhost:5173/)
 npm run build      # production build to dist/
 npm run preview    # preview the production build
 npm run lint       # eslint .
@@ -44,11 +44,15 @@ npm run e2e:open   # same, with the Cypress UI
 
 This does **not** replace the live-deploy validation from "Auth: real integration fixed" above — these are fast regression tests for the logic, not a substitute for testing against the real backend before shipping an auth-related change.
 
-**CI (2026-09-21):** `.github/workflows/deploy.yml` runs `npm test` right before the build step — a failing test blocks the GitHub Pages deploy, it doesn't just report red somewhere. `.github/workflows/ci.yml` runs the same suite on every PR targeting `main` (deploy.yml only triggers on push to `main`, so PRs had no automated check before this). **Node version gotcha hit and fixed:** `jsdom` v30 requires Node `^22.22.2 || ^24.15.0 || >=26.0.0` — the first CI run failed on Node 20 even though it passed locally (local Node was 26). Both workflows now pin `node-version: 22`, and `package.json` declares `engines.node: ">=22.22.2"` so this doesn't quietly bite anyone running tests locally on an older Node either.
+**CI (2026-09-21, deploy moved to Vercel 2026-09-27):** Vercel's build command (`vercel.json`) is `npm test && npm run build` — a failing test blocks the deploy, it doesn't just report red somewhere. `.github/workflows/ci.yml` runs lint + the same suite on every PR targeting `main`. **Node version gotcha hit and fixed:** `jsdom` v30 requires Node `^22.22.2 || ^24.15.0 || >=26.0.0` — the first CI run failed on Node 20 even though it passed locally (local Node was 26). `ci.yml` pins `node-version: 22`, and `package.json` declares `engines.node: ">=22.22.2"` so this doesn't quietly bite anyone running tests locally on an older Node either.
 
 ## Architecture (current implementation)
 
-React 19 + Vite SPA (`login-react` in package.json), plain JavaScript (`.jsx`, not TypeScript) with plain CSS (no Tailwind). Deployed to GitHub Pages at the `/edu-analitica-frontend/` subpath — `vite.config.js` sets `base` accordingly and `App.jsx` passes `basename={import.meta.env.BASE_URL}` to the router, so both must stay in sync with the repo name.
+React 19 + Vite SPA (`login-react` in package.json), plain JavaScript (`.jsx`, not TypeScript) with plain CSS (no Tailwind). Deployed to **Vercel** at the domain root (`base` is Vite's default `/`; `App.jsx` still passes `basename={import.meta.env.BASE_URL}` so a subpath would only need a `base` change).
+
+### Deploy: Vercel (migrated from GitHub Pages 2026-09-27)
+
+Moved so the repo can be private (GitHub Pages on a private repo needs a paid plan). Vercel's Git integration deploys `main` to production and every PR to a preview. `vercel.json` holds the install/build commands (`CYPRESS_INSTALL_BINARY=0 npm ci`, `npm test && npm run build`) and the SPA rewrite to `index.html` (deep links return 200 — no more `404.html` trick). `VITE_API_URL` lives in Vercel's Environment Variables. The backend's `FRONTEND_URL` (Railway) must be the exact production Vercel origin; CORS only allows that one, so **preview deploys load but can't call the API**. Earlier "validated against the live deploy" notes below refer to the old GitHub Pages URL.
 
 Roles on the backend are stored lowercase (`administrador`, `docente`, `estudiante`); the frontend uses capitalized role strings (`Admin`, `Docente`, `Estudiante`) — this mapping happens on the backend response, not in this repo.
 
@@ -108,7 +112,7 @@ Shared dashboard UI pieces (`StatCard`, `Badge`, and `widgets.css` with `.panel`
 
 The project's original planning doc (from Brandon/architect) describes a different target than what exists in this repo. **This repo is the source of truth**; the items below record where it diverged so nobody builds from the spec's names. Updated 2026-09-27.
 
-- **Stack:** spec calls for TypeScript (strict, no `any`) + Tailwind CSS + Cypress E2E, deployed to Vercel/Netlify. Actual: plain JS/JSX, plain CSS, Vitest + Cypress E2E (see "Commands"), deployed to GitHub Pages.
+- **Stack:** spec calls for TypeScript (strict, no `any`) + Tailwind CSS + Cypress E2E, deployed to Vercel/Netlify. Actual: plain JS/JSX, plain CSS, Vitest + Cypress E2E (see "Commands"), deployed to Vercel.
 - **Student flow:** implemented (Módulo 3), but it is **not** an `estudiante` role area. The page files live in `src/pages/estudiante/` (`AccesoGrupo.jsx`, `SeleccionModulo.jsx`, `Actividad.jsx`, `Resultado.jsx`), but the routes are `/grupo`, `/grupo/modulos[/:idModulo]`, `/grupo/actividad/:idActividad` and `/grupo/resultado` — there is no `/estudiante/*` route. Session state is `GrupoContext` (not `AuthContext`), gated by `GrupoRoute` (not `PrivateRoute`), and requests go through `grupoClient` (a separate axios instance, not `apiClient`). Details under "Módulo 3" below. The spec's `docente/CrearActividad` is `docente/ActividadesDocente.jsx` (catalog + editor, max 10 questions).
 - **Route guards:** the spec's two wrappers `ProtectedRoute` + `RoleRoute` **don't exist and won't be added**. `src/routes/PrivateRoute.jsx` does both checks (not authenticated → `/`, wrong role → `/no-autorizado`; `allowedRoles` takes an array, e.g. `allowedRoles={['docente']}`) for docente/admin, and `src/routes/GrupoRoute.jsx` guards the kids' `/grupo/*` routes. Don't reintroduce the split.
 - **Folder/file naming:** spec uses PascalCase `.tsx` files (`Login.tsx`, `AppLayout.tsx`). Actual repo uses `.jsx`, with some lowercase page files (`login.jsx`, `admin.jsx`, `docente.jsx`) and PascalCase for the rest (`DashboardLayout.jsx`, `PrivateRoute.jsx`).
@@ -249,7 +253,6 @@ Cypress 16 (`cypress.config.js`, JS like the rest of the repo) drives the **real
 - Config: `E2E_BASE_URL` (frontend, defaults to the local dev server), `E2E_API_URL` (the backend THAT frontend was built against). Credentials in `cypress.env.json` (gitignored; template `cypress.env.example.json`), read with `cy.env()` — Cypress 16 removed `Cypress.env()`; public values go through `expose` / `Cypress.expose()`.
 - Data is prepared through the API (`cypress/support/datos.js`) with the accessToken from `/api/auth/refresh`. M3/M4 create their own fresh sección so assertions (best/worst group, CSV rows) are exact on a shared DB. Everything is E2E-prefixed and soft-deleted in `after()`; Módulo 4 report links can't be deleted and stay on the inactive E2E sección.
 - **Login rate limit gotcha:** `/api/auth/login` allows 5 attempts per IP per 15 min, *successes included*. `cy.loginAs` caches sessions (`cy.session`, `cacheAcrossSpecs`) and persists the refresh cookie (doesn't rotate, valid 7 days) in `cypress/.sesiones.json` (gitignored), so a full run only spends the 3 logins in `m1-auth`. A 429 fails with an explicit message — wait 15 min.
-- **GitHub Pages gotcha:** deep links (`/docente`) are served by the `404.html` SPA fallback with HTTP 404; `cy.visit` is overwritten with `failOnStatusCode: false`.
 - Not in Cypress (no frontend screen or not automatable): M2-02/M2-03 (módulos/grados CRUD → Supertest), M1-12, M3-08, M3-10, M4-07, TX-* (manual/Supertest). The matrix's M1-13 still mentions `/estudiante`, which no longer exists.
 - Not in CI yet: it needs a live backend and credentials (would be `CYPRESS_*` secrets + a test backend).
 

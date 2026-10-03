@@ -2,7 +2,7 @@
 
 Frontend del proyecto de seminario **EduAnalítica** (UMG) para el Colegio Mixto Juventud San Francisco: refuerzo de matemática y computación para 1ro–3ro primaria mediante actividades interactivas.
 
-Consume la API REST de [`edu-analitica-backend`](../edu-analitica-backend) y se publica en GitHub Pages bajo `/edu-analitica-frontend/`.
+Consume la API REST de [`edu-analitica-backend`](../edu-analitica-backend) y se publica en Vercel.
 
 ## Stack
 
@@ -16,7 +16,7 @@ Consume la API REST de [`edu-analitica-backend`](../edu-analitica-backend) y se 
 ```bash
 npm install
 echo "VITE_API_URL=http://localhost:3000" > .env   # URL del backend
-npm run dev                                          # http://localhost:5173/edu-analitica-frontend/
+npm run dev                                          # http://localhost:5173/
 ```
 
 | Comando | Descripción |
@@ -36,7 +36,7 @@ Requiere Node `>=22.22.2`.
 
 Recorren la app real (frontend + backend + base de datos) siguiendo la matriz de pruebas del proyecto: un spec por módulo en `cypress/e2e/` (`m1-auth`, `m2-admin`, `m2-actividades`, `m3-grupos`, `m4-reportes`). Cada test indica en su nombre el ID de la matriz (M1-01, M3-06…).
 
-**Nunca corren contra producción.** Usan un entorno aparte: la rama `e2e` de Neon (proyecto `old-cloud-41196914`, creada *schema-only*, sin datos de producción) con el backend y el frontend levantados en local. `cypress.config.js` se niega a arrancar si la URL del frontend o de la API es la de producción (GitHub Pages o Railway).
+**Nunca corren contra producción.** Usan un entorno aparte: la rama `e2e` de Neon (proyecto `old-cloud-41196914`, creada *schema-only*, sin datos de producción) con el backend y el frontend levantados en local. `cypress.config.js` se niega a arrancar si la URL del frontend o de la API es la de producción (Vercel o Railway).
 
 1. Copia `cypress.env.example.json` a `cypress.env.json` (está en `.gitignore`) con los usuarios admin y docente de prueba.
 2. En `edu-analitica-backend`, copia `.env.e2e.example` a `.env.e2e` con la URL de la rama `e2e` (`neonctl connection-string e2e --project-id old-cloud-41196914`) y **los mismos usuarios** de `cypress.env.json`. Luego, la primera vez (y cuando quieras dejar la base limpia):
@@ -92,4 +92,5 @@ Todos los datos vienen de la API; no hay datos de ejemplo en el frontend.
 ## CI / Deploy
 
 - `ci.yml` corre lint y tests en cada PR hacia `main`.
-- `deploy.yml` corre los tests y publica en GitHub Pages en cada push a `main`. Usa el secret `VITE_API_URL`.
+- El deploy lo hace **Vercel** con su integración de Git (`vercel.json`): cada push a `main` publica producción y cada PR recibe un preview. El build corre `npm test && npm run build`, así que un test en rojo bloquea el deploy. `VITE_API_URL` se configura en *Project Settings → Environment Variables*.
+- El backend solo acepta por CORS el origen de `FRONTEND_URL` (el dominio de producción de Vercel), así que los previews cargan pero no pueden llamar a la API.
