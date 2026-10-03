@@ -40,9 +40,10 @@ export default defineConfig({
   e2e: {
     baseUrl,
     specPattern: 'cypress/e2e/**/*.cy.js',
-    // La rama de Neon se suspende sin uso y tarda unos segundos en despertar.
-    defaultCommandTimeout: 12000,
-    requestTimeout: 15000,
+    // La rama de Neon se suspende sin uso y tarda en despertar; margen por
+    // encima del timeout de axios (30 s, src/services/timeout.js).
+    defaultCommandTimeout: 35000,
+    requestTimeout: 35000,
     viewportWidth: 1366,
     viewportHeight: 768,
     video: false,

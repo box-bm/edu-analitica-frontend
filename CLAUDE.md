@@ -101,7 +101,7 @@ Shared dashboard UI pieces (`StatCard`, `Badge`, and `widgets.css` with `.panel`
 
 "Escolar cálido y lúdico": navy ink from the logo + orange / teal / yellow accents on cream "paper", rounded fonts (Baloo 2 for headings, Nunito for body, loaded from Google Fonts in `index.html` with system fallbacks). **All colors are CSS custom properties in `src/index.css`** (`--ink`, `--paper`, `--orange`, `--teal`, `--sun`, `--grape`, `--sky`, `--leaf`, each with `-soft`/`-deep` variants) — use tokens, not hex, in new CSS. Shared buttons (`.btn-primary` orange, `.btn-teal`, `.btn-secondary`, `.btn-ghost`, `.btn-sm`) and `.cargando` / `.estado-vacio` live there too. The old blue hex values in pages were remapped to the palette. Light theme only (`color-scheme: light`).
 
-- `DashboardLayout`: fixed sidebar on desktop (no more hover-to-expand), drawer with scrim under 900px, greeting + date + role chip + initials avatar in the topbar. Menu items accept an optional `color`; otherwise they cycle through the palette.
+- `DashboardLayout`: fixed sidebar on desktop (no more hover-to-expand), drawer with scrim under 900px, greeting + date + role chip + initials avatar in the topbar. Menu items accept an optional `color`; otherwise they cycle through the palette. `icon` is a **component** from `lucide-react` (e.g. `icon: House`), not an emoji or element — the layout renders it in the sidebar and in a colored tile next to the page title.
 - `StatCard` takes `accent` as any CSS color (tokens like `var(--teal)` work) via the `--accent` custom property.
 - `Modal` accepts `wide` (760px) and has `role="dialog"`.
 - Kids' zone styles are in `src/pages/estudiante/grupo.css` (big buttons `.boton-grande`, module colors via `.color-<name>`). **No red anywhere in the kids' zone** — questions to review use yellow with a 💡, results always show at least 1 star.
@@ -240,6 +240,7 @@ The Módulo 1 auth flow — login, refresh, logout, protected routes, and `usuar
 
 - `apiClient`'s `baseURL` comes from `VITE_API_URL`, `withCredentials: true` is set, and the backend's refresh cookie (`sameSite=none; secure=true` in production) is correctly sent/received cross-domain — verified: login sets the cookie, refresh reads it and returns a valid new token, logout revokes it server-side.
 - CORS is correctly scoped (`Access-Control-Allow-Credentials: true`, `Access-Control-Allow-Origin` matching this deploy's exact GitHub Pages origin) — confirmed via response headers.
+- **Backend is serverless since 2026-10-03** (Railway App Sleeping, see the backend's CLAUDE.md "Deployment"): the first request after ~5–10 min idle pays a cold start (container boot + Neon wake). Both axios clients use a 30 s timeout from `src/services/timeout.js` (was 10 s) to absorb it. The backend notes the first call may even get a 502 — there is no retry on the frontend yet.
 - Infra is live end-to-end: Neon Postgres + Railway deploy on the backend (test users, roles, and `grados`/`secciones` data already seeded), GitHub Pages on this repo.
 
 This piece of Módulo 2 is closed. The `Secciones` admin page is done (`SeccionesAdmin.jsx`); next active frontend work is Módulo 4 (Reportes, above).
