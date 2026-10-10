@@ -23,12 +23,13 @@ const leerSesiones = () => {
 //   el que se construyó). Los tests lo llaman directo para preparar datos.
 // - Credenciales (secretas): cypress.env.json o CYPRESS_ADMIN_USER, etc.
 //   Ver cypress.env.example.json y la sección E2E del README.
-const baseUrl = process.env.E2E_BASE_URL ?? 'http://localhost:5173/edu-analitica-frontend/';
+const baseUrl = process.env.E2E_BASE_URL ?? 'http://localhost:5173/';
 const apiUrl = (process.env.E2E_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 
-// El deploy de GitHub Pages está construido contra el backend de producción,
-// así que también se bloquea aunque E2E_API_URL apunte a otro lado.
-const PRODUCCION = [/\.github\.io$/, /^edu-analitica-backend-production\.up\.railway\.app$/];
+// Los deploys de Vercel (producción y previews) están construidos contra el
+// backend de producción, así que también se bloquean aunque E2E_API_URL
+// apunte a otro lado.
+const PRODUCCION = [/\.vercel\.app$/, /^edu-analitica-backend-production\.up\.railway\.app$/];
 for (const url of [baseUrl, apiUrl]) {
   if (PRODUCCION.some((patron) => patron.test(new URL(url).hostname))) {
     throw new Error(`E2E contra producción bloqueado (${url}). Usa el entorno e2e: ver README, sección E2E.`);

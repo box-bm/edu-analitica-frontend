@@ -11,12 +11,6 @@
 const api = (ruta) => `${Cypress.expose('apiUrl')}${ruta}`;
 const apiUrl = () => new URL(Cypress.expose('apiUrl'));
 
-// GitHub Pages sirve la SPA en rutas profundas (/docente) con status 404
-// (fallback de 404.html); la página es la correcta, así que no se trata como error.
-Cypress.Commands.overwrite('visit', (visit, url, opciones = {}) =>
-  visit(url, { failOnStatusCode: false, ...opciones })
-);
-
 const MENSAJE_LIMITE =
   'El backend devolvió 429 en /api/auth/login (5 intentos cada 15 min por IP). ' +
   'Espera 15 minutos antes de volver a correr los tests de login.';

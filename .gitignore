@@ -32,3 +32,4 @@ cypress/downloads
 cypress/screenshots
 cypress/videos
 cypress/.sesiones.json
+.neon
