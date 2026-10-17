@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import userService from '../services/userService';
-import { setAccessToken } from '../services/apiClient';
+import { onSesionExpirada, setAccessToken } from '../services/apiClient';
 import { nombreRol } from '../utils/rol';
 
 const AuthContext = createContext();
@@ -19,7 +19,20 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Al montar la app, intenta recuperar sesión real vía refresh
+  // El refresh del interceptor respondió 401 (sesión vencida, revocada, o
+  // cerrada por el backend al detectar reuso de la cookie): sin usuario,
+  // PrivateRoute manda al login, que muestra este mensaje.
+  useEffect(() => {
+    onSesionExpirada(() => {
+      setAccessToken(null);
+      setUser(null);
+      setError('Tu sesión expiró. Inicia sesión otra vez.');
+    });
+    return () => onSesionExpirada(null);
+  }, []);
+
+  // Al montar la app, intenta recuperar sesión real vía refresh (el mismo
+  // single-flight del interceptor, así no compite con otras requests).
   useEffect(() => {
     const restoreSession = async () => {
       // POST /api/auth/refresh only returns a new accessToken, no user data,

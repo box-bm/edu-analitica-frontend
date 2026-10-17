@@ -1,8 +1,10 @@
 import grupoClient from './grupoClient';
 
-// Mensajes pensados para niños de 7–10 años: cortos y sin tono de error.
+// Mensajes pensados para niños de 7–10 años: cortos y sin tono de error. El
+// `message` del 429 (tras 20 códigos fallidos) va dirigido a adultos, así que
+// aquí se reemplaza por uno para niños que los manda con la maestra.
 const mensaje = (err, porDefecto) => {
-  if (err.response?.status === 429) return 'Espera un ratito y vuelve a intentarlo.';
+  if (err.response?.status === 429) return 'Muchos intentos. Esperen un ratito y pidan ayuda a su maestra.';
   if (!err.response) return 'No hay conexión. Pide ayuda a tu maestra.';
   return porDefecto;
 };

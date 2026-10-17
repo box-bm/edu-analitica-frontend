@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import apiClient, { refrescarSesion } from './apiClient';
 
 class UserService {
   async login(credentials) {
@@ -15,17 +15,22 @@ class UserService {
     } catch (err) {
       return {
         success: false,
-        error: err.response?.data?.message || 'Credenciales inválidas',
+        // 401 → credenciales; 429 → límite de intentos. El backend manda el
+        // texto en `message`. Sin respuesta es un problema de red.
+        error: err.response
+          ? err.response.data?.message || 'Credenciales inválidas'
+          : 'No se pudo conectar con el servidor. Intenta de nuevo.',
       };
     }
   }
 
   async refresh() {
     try {
-      const response = await apiClient.post('/api/auth/refresh');
+      // Mismo refresh single-flight que usa el interceptor de apiClient.
+      const accessToken = await refrescarSesion();
       return {
         success: true,
-        data: response.data,
+        data: { accessToken },
       };
     } catch (err) {
       return {
