@@ -5,11 +5,23 @@ import { useAuth } from '../../context/AuthContext';
 import useCarga from '../../hooks/useCarga';
 import usuariosService from '../../services/usuariosService';
 import { nombreRol } from '../../utils/rol';
+import { REGLAS_PASSWORD, validarPassword } from '../../utils/password';
 
 const ETIQUETA_ROL = { administrador: 'Admin', docente: 'Docente' };
 const FORM_VACIO = { nombreCompleto: '', usuario: '', password: '', rol: 'docente' };
 
 const cargarUsuarios = () => usuariosService.listar();
+
+const CAMPOS = ['nombreCompleto', 'usuario', 'password', 'rol'];
+
+function ErroresCampo({ errores }) {
+  if (!errores?.length) return null;
+  return (
+    <span className="campo-errores" role="alert">
+      {errores.map((e) => <span key={e}>{e}</span>)}
+    </span>
+  );
+}
 
 const fecha = new Intl.DateTimeFormat('es-GT', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -23,6 +35,7 @@ export default function UsuariosAdmin() {
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
   const [formError, setFormError] = useState(null);
+  const [erroresCampo, setErroresCampo] = useState({});
   const [aviso, setAviso] = useState(null);
 
   if (cargando && !usuarios) return <p className="cargando">Cargando usuarios…</p>;
@@ -46,21 +59,31 @@ export default function UsuariosAdmin() {
   const abrirNuevo = () => {
     setForm(FORM_VACIO);
     setFormError(null);
+    setErroresCampo({});
     setEditando('nuevo');
   };
 
   const abrirEditar = (u) => {
     setForm({ nombreCompleto: u.nombreCompleto, usuario: u.usuario, password: '', rol: nombreRol(u.rol) });
     setFormError(null);
+    setErroresCampo({});
     setEditando(u);
   };
 
   const guardar = async (e) => {
     e.preventDefault();
-    setGuardando(true);
     setFormError(null);
+    setErroresCampo({});
 
     const datos = { ...form, nombreCompleto: form.nombreCompleto.trim(), usuario: form.usuario.trim() };
+    // Al editar la contraseña es opcional: solo se valida si se escribió algo.
+    const erroresPassword = editando === 'nuevo' || datos.password ? validarPassword(datos.password, datos.usuario) : [];
+    if (erroresPassword.length) {
+      setErroresCampo({ password: erroresPassword });
+      return;
+    }
+
+    setGuardando(true);
     let result;
     if (editando === 'nuevo') {
       result = await usuariosService.crear(datos);
@@ -72,7 +95,10 @@ export default function UsuariosAdmin() {
     setGuardando(false);
 
     if (!result.success) {
-      setFormError(result.error);
+      const errores = result.errores ?? {};
+      setErroresCampo(errores);
+      // El mensaje general solo si ningún error cae en un campo visible.
+      if (!CAMPOS.some((c) => errores[c]?.length)) setFormError(result.error);
       return;
     }
     setAviso(editando === 'nuevo' ? `Usuario "${result.data.usuario}" creado.` : 'Cambios guardados.');
@@ -174,22 +200,37 @@ export default function UsuariosAdmin() {
               Nombre completo
               <input value={form.nombreCompleto} onChange={(e) => setForm({ ...form, nombreCompleto: e.target.value })} maxLength={100} required autoFocus />
             </label>
+            <ErroresCampo errores={erroresCampo.nombreCompleto} />
             <label className="form-field">
               Usuario
               <input value={form.usuario} onChange={(e) => setForm({ ...form, usuario: e.target.value })} minLength={3} maxLength={50} autoComplete="off" required />
             </label>
+            <ErroresCampo errores={erroresCampo.usuario} />
             <label className="form-field">
               {editando === 'nuevo' ? 'Contraseña' : 'Nueva contraseña (opcional)'}
               <input
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                minLength={8}
                 autoComplete="new-password"
-                placeholder={editando === 'nuevo' ? 'Mínimo 8 caracteres' : 'Déjala vacía para no cambiarla'}
+                placeholder={editando === 'nuevo' ? 'Mínimo 10 caracteres' : 'Déjala vacía para no cambiarla'}
                 required={editando === 'nuevo'}
+                aria-describedby="reglas-password"
               />
             </label>
+            <div className="ayuda-password">
+              <ul id="reglas-password" className="reglas-password">
+                {REGLAS_PASSWORD.map((r) => {
+                  const ok = form.password !== '' && r.cumple(form.password, form.usuario);
+                  return (
+                    <li key={r.id} className={ok ? 'cumple' : undefined}>
+                      <span aria-hidden="true">{ok ? '✓' : '•'}</span> {r.texto}
+                    </li>
+                  );
+                })}
+              </ul>
+              <ErroresCampo errores={erroresCampo.password} />
+            </div>
             <label className="form-field">
               Rol
               <select
@@ -201,6 +242,7 @@ export default function UsuariosAdmin() {
                 <option value="administrador">Administrador</option>
               </select>
             </label>
+            <ErroresCampo errores={erroresCampo.rol} />
             {formError && <p className="form-error">{formError}</p>}
             <div className="modal-actions">
               <button type="button" className="btn-secondary" onClick={() => setEditando(null)} disabled={guardando}>Cancelar</button>

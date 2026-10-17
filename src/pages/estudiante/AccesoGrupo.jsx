@@ -49,7 +49,9 @@ export default function AccesoGrupo() {
         <p className="acceso-instruccion">Escriban el código de su grupo</p>
 
         {expirada && !error && (
-          <p className="acceso-aviso">⏰ Se acabó el tiempo. Escriban su código otra vez.</p>
+          // Token vencido, código regenerado o sesión invalidada por un deploy:
+          // para los niños es lo mismo, volver a escribir el código.
+          <p className="acceso-aviso">⏰ Tu sesión terminó. Escriban otra vez el código del grupo.</p>
         )}
 
         <form onSubmit={enviar}>

@@ -63,4 +63,50 @@ describe('UsuariosAdmin (API real)', () => {
       rol: 'docente',
     });
   });
+
+  it('validates the password policy on create before calling the API', async () => {
+    render(<UsuariosAdmin />);
+    await screen.findByText('Ana Docente');
+
+    await userEvent.click(screen.getByRole('button', { name: '+ Nuevo usuario' }));
+    await userEvent.type(screen.getByLabelText('Nombre completo'), 'Luis Docente');
+    await userEvent.type(screen.getByLabelText('Usuario'), 'luis.docente');
+    await userEvent.type(screen.getByLabelText('Contraseña'), 'corta1');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    expect(usuariosService.crear).not.toHaveBeenCalled();
+    expect(screen.getByText('La contraseña debe tener al menos 10 caracteres')).toBeInTheDocument();
+  });
+
+  it('validates a new password on edit only when one is typed', async () => {
+    render(<UsuariosAdmin />);
+    await screen.findByText('Ana Docente');
+
+    await userEvent.click(within(fila('Ana Docente')).getByRole('button', { name: 'Editar' }));
+    await userEvent.type(screen.getByLabelText('Nueva contraseña (opcional)'), 'sinnumeros');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    expect(usuariosService.actualizar).not.toHaveBeenCalled();
+    expect(screen.getByText('La contraseña debe incluir al menos un número')).toBeInTheDocument();
+  });
+
+  it('shows backend field errors next to their field', async () => {
+    usuariosService.crear.mockResolvedValueOnce({
+      success: false,
+      error: 'Ya existe un usuario con ese nombre',
+      errores: { usuario: ['Ya existe un usuario con ese nombre'] },
+    });
+    render(<UsuariosAdmin />);
+    await screen.findByText('Ana Docente');
+
+    await userEvent.click(screen.getByRole('button', { name: '+ Nuevo usuario' }));
+    await userEvent.type(screen.getByLabelText('Nombre completo'), 'Ana Bis');
+    await userEvent.type(screen.getByLabelText('Usuario'), 'ana.docente');
+    await userEvent.type(screen.getByLabelText('Contraseña'), 'clave segura 2026');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    const usuario = screen.getByLabelText('Usuario').closest('label');
+    expect(usuario.nextElementSibling).toHaveTextContent('Ya existe un usuario con ese nombre');
+    expect(screen.getAllByRole('alert')).toHaveLength(1); // not duplicated as a general error
+  });
 });

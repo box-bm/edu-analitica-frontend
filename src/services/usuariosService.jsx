@@ -1,9 +1,15 @@
 import apiClient from './apiClient';
 
+// Un 400 de validación trae { message, errores: { campo: [..] } }; `errores`
+// se devuelve tal cual para pintarlo junto a cada campo del formulario.
 const error = (err, porDefecto) => {
   const detalle = err.response?.data?.errores;
   const primero = detalle && Object.values(detalle).flat()[0];
-  return { success: false, error: primero || err.response?.data?.message || porDefecto };
+  return {
+    success: false,
+    error: primero || err.response?.data?.message || porDefecto,
+    errores: detalle || null,
+  };
 };
 
 class UsuariosService {

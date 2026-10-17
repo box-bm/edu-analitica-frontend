@@ -402,3 +402,61 @@ input.form-field:focus {
 .buscador {
   min-width: 240px;
 }
+
+/* Ayuda y errores por campo (formulario de usuarios) */
+.campo-errores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--alert);
+}
+
+.ayuda-password {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: -0.4rem;
+}
+
+.reglas-password {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.reglas-password li.cumple {
+  color: var(--teal-deep);
+  font-weight: 700;
+}
+
+/* Bitácora (admin) */
+.filtro-fecha {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.data-table tr.fila-incidente td {
+  background: var(--sun-soft);
+}
+
+.detalle-auditoria {
+  margin: 0.4rem 0 0;
+  max-width: 28rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.78rem;
+}
+
+.paginacion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}

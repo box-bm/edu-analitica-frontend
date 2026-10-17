@@ -2,6 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
+import { AxiosError } from 'axios';
 import apiClient, { setAccessToken } from '../src/services/apiClient';
 import userService from '../src/services/userService';
 
@@ -170,5 +171,38 @@ describe('AuthContext', () => {
 
     expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
     expect(screen.getByTestId('error')).toHaveTextContent('Credenciales invalidas');
+  });
+
+  it('clears the user when the interceptor refresh gets a 401 (PrivateRoute then sends to login)', async () => {
+    userService.refresh.mockResolvedValueOnce({ success: false, error: 'Sin sesion' });
+    userService.login.mockResolvedValueOnce({
+      success: true,
+      data: { accessToken: 'login-token', usuario: { id: 2, nombre: 'Docente Uno', rol: 'docente' } },
+    });
+
+    const user = userEvent.setup();
+    renderHarness();
+    await waitFor(() => expect(screen.getByTestId('loading')).toHaveTextContent('false'));
+    await act(async () => {
+      await user.click(screen.getByText('login'));
+    });
+    expect(screen.getByTestId('authenticated')).toHaveTextContent('true');
+
+    // Everything 401s, including the real (unmocked) refresh in apiClient.
+    const adapter = async (config) => {
+      throw new AxiosError('fail', 'ERR', config, null, { status: 401, data: {}, headers: {}, config });
+    };
+    const original = apiClient.defaults.adapter;
+    apiClient.defaults.adapter = adapter;
+    try {
+      await act(async () => {
+        await expect(apiClient.get('/api/docentes/me/grupos')).rejects.toThrow();
+      });
+    } finally {
+      apiClient.defaults.adapter = original;
+    }
+
+    expect(screen.getByTestId('authenticated')).toHaveTextContent('false');
+    expect(screen.getByTestId('error')).toHaveTextContent('Tu sesión expiró');
   });
 });
