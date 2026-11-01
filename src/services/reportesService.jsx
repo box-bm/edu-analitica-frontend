@@ -55,6 +55,25 @@ class ReportesService {
     }
   }
 
+  // Puntos de las actividades por grupo y módulo (complementarios, no son una
+  // nota). Filtros opcionales además de grado/ciclo.
+  async puntos({ idSeccion, idGrupo, idModulo, idActividad, ...filtro } = {}) {
+    try {
+      const response = await apiClient.get('/api/reportes/puntos', {
+        params: {
+          ...params(filtro),
+          ...(idSeccion ? { idSeccion } : {}),
+          ...(idGrupo ? { idGrupo } : {}),
+          ...(idModulo ? { idModulo } : {}),
+          ...(idActividad ? { idActividad } : {}),
+        },
+      });
+      return { success: true, data: response.data };
+    } catch (err) {
+      return error(err, 'No se pudieron cargar los puntos');
+    }
+  }
+
   async descargarCsv(filtro) {
     return descargar('/api/reportes/resultados.csv', params(filtro), 'resultados.csv');
   }

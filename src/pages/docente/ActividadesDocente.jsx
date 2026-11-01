@@ -2,46 +2,13 @@ import { useEffect, useState } from 'react';
 import Badge from '../../components/dashboard/Badge';
 import Modal from '../../components/dashboard/Modal';
 import actividadesService, { MAX_PREGUNTAS } from '../../services/actividadesService';
+import { TIPOS } from '../../components/preguntas/tipos';
+import EditorPregunta from './actividades/EditorPregunta';
+import VistaPregunta from './actividades/VistaPregunta';
+import { aApi, desdeApi, preguntaVacia, validar } from './actividades/formato';
 import './docente.css';
 
-const MAX_OPCIONES = 4;
-const preguntaVacia = () => ({ enunciado: '', opciones: ['', ''], correcta: null });
-
 const etiquetaModulo = (m) => `${m.grado?.nombreGrado ?? ''} — ${m.icono ?? ''} ${m.nombreModulo}`;
-
-// El formulario guarda la correcta como índice; la API espera el texto.
-function aApi(preguntas) {
-  return preguntas.map((p) => {
-    const opciones = p.opciones.map((o) => o.trim());
-    return {
-      enunciado: p.enunciado.trim(),
-      opciones,
-      respuestaCorrecta: p.correcta === null ? '' : opciones[p.correcta],
-    };
-  });
-}
-
-function desdeApi(preguntas) {
-  return preguntas.map((p) => ({
-    enunciado: p.enunciado,
-    opciones: [...p.opciones],
-    correcta: p.opciones.indexOf(p.respuestaCorrecta),
-  }));
-}
-
-function validar(form) {
-  if (!form.idModulo) return 'Elige un módulo.';
-  if (!form.titulo.trim()) return 'Escribe un título.';
-  for (const [i, p] of form.preguntas.entries()) {
-    const n = i + 1;
-    if (!p.enunciado.trim()) return `La pregunta ${n} no tiene enunciado.`;
-    const opciones = p.opciones.map((o) => o.trim());
-    if (opciones.some((o) => !o)) return `La pregunta ${n} tiene opciones vacías.`;
-    if (new Set(opciones).size !== opciones.length) return `La pregunta ${n} tiene opciones repetidas.`;
-    if (p.correcta === null || p.correcta < 0) return `Marca la respuesta correcta de la pregunta ${n}.`;
-  }
-  return null;
-}
 
 export default function ActividadesDocente() {
   const [modulos, setModulos] = useState([]);
@@ -207,6 +174,15 @@ export default function ActividadesDocente() {
                 </div>
                 <h4>{a.titulo}</h4>
                 {a.descripcion && <p>{a.descripcion}</p>}
+                {a.tipos?.length > 0 && (
+                  <div className="chips-tipos">
+                    {a.tipos.map((t) => (
+                      <span key={t} className="chip-tipo" title={TIPOS[t]?.nombre}>
+                        {TIPOS[t]?.icono} {TIPOS[t]?.nombre}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <footer>
                   <span className="texto-suave">{a.totalPreguntas} preguntas</span>
                   <button className="btn-secondary btn-sm" onClick={() => abrirExistente(a)} disabled={abriendo}>
@@ -256,17 +232,6 @@ function EditorActividad({ editor, setEditor, modulos, onGuardado }) {
 
   const actualizarPregunta = (indice, cambios) =>
     cambiarPreguntas((preguntas) => preguntas.map((p, i) => (i === indice ? { ...p, ...cambios } : p)));
-
-  const quitarOpcion = (iPregunta, iOpcion) =>
-    cambiarPreguntas((preguntas) =>
-      preguntas.map((p, i) => {
-        if (i !== iPregunta) return p;
-        let correcta = p.correcta;
-        if (correcta === iOpcion) correcta = null;
-        else if (correcta !== null && correcta > iOpcion) correcta -= 1;
-        return { ...p, opciones: p.opciones.filter((_, j) => j !== iOpcion), correcta };
-      })
-    );
 
   const guardar = async (e) => {
     e.preventDefault();
@@ -318,17 +283,7 @@ function EditorActividad({ editor, setEditor, modulos, onGuardado }) {
           </p>
           <ol className="lectura-pregunta">
             {editor.detalle.preguntas.map((p) => (
-              <li key={p.id}>
-                <strong>{p.enunciado}</strong>
-                <ul>
-                  {p.opciones.map((o) => (
-                    <li key={o} className={o === p.respuestaCorrecta ? 'correcta' : ''}>
-                      {o === p.respuestaCorrecta ? '✓ ' : ''}
-                      {o}
-                    </li>
-                  ))}
-                </ul>
-              </li>
+              <VistaPregunta key={p.id} pregunta={p} />
             ))}
           </ol>
           <div className="modal-actions">
@@ -395,77 +350,14 @@ function EditorActividad({ editor, setEditor, modulos, onGuardado }) {
           </div>
 
           {editor.form.preguntas.map((p, iP) => (
-            <div key={iP} className="pregunta-editor">
-              <div className="pregunta-editor-top">
-                <span className="pregunta-num">{iP + 1}</span>
-                <label className="form-field">
-                  Enunciado
-                  <input
-                    value={p.enunciado}
-                    onChange={(e) => actualizarPregunta(iP, { enunciado: e.target.value })}
-                    maxLength={255}
-                    placeholder="Ej: ¿Cuánto es 7 − 2?"
-                  />
-                </label>
-                <button
-                  type="button"
-                  className="btn-ghost btn-sm"
-                  style={{ marginTop: '1.4rem' }}
-                  onClick={() => cambiarPreguntas((ps) => ps.filter((_, i) => i !== iP))}
-                  disabled={nPreguntas === 1}
-                  aria-label={`Quitar pregunta ${iP + 1}`}
-                >
-                  🗑
-                </button>
-              </div>
-
-              <div className="opciones-editor">
-                {p.opciones.map((o, iO) => (
-                  <div key={iO} className={`opcion-editor ${p.correcta === iO ? 'es-correcta' : ''}`}>
-                    <input
-                      type="text"
-                      value={o}
-                      onChange={(e) =>
-                        actualizarPregunta(iP, {
-                          opciones: p.opciones.map((x, i) => (i === iO ? e.target.value : x)),
-                        })
-                      }
-                      maxLength={100}
-                      placeholder={`Opción ${iO + 1}`}
-                      aria-label={`Pregunta ${iP + 1}, opción ${iO + 1}`}
-                    />
-                    <label className="opcion-correcta">
-                      <input
-                        type="radio"
-                        name={`correcta-${iP}`}
-                        checked={p.correcta === iO}
-                        onChange={() => actualizarPregunta(iP, { correcta: iO })}
-                      />
-                      Correcta
-                    </label>
-                    <button
-                      type="button"
-                      className="btn-ghost btn-sm"
-                      onClick={() => quitarOpcion(iP, iO)}
-                      disabled={p.opciones.length <= 2}
-                      aria-label={`Quitar opción ${iO + 1}`}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-                {p.opciones.length < MAX_OPCIONES && (
-                  <button
-                    type="button"
-                    className="btn-ghost btn-sm"
-                    style={{ justifySelf: 'start' }}
-                    onClick={() => actualizarPregunta(iP, { opciones: [...p.opciones, ''] })}
-                  >
-                    + Opción
-                  </button>
-                )}
-              </div>
-            </div>
+            <EditorPregunta
+              key={iP}
+              pregunta={p}
+              indice={iP}
+              onCambiar={(cambios) => actualizarPregunta(iP, cambios)}
+              onQuitar={() => cambiarPreguntas((ps) => ps.filter((_, i) => i !== iP))}
+              puedeQuitar={nPreguntas > 1}
+            />
           ))}
 
           <button

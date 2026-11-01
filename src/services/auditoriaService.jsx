@@ -24,6 +24,8 @@ export const ACCIONES_AUDITORIA = {
   modulo_creado: 'Módulo creado',
   modulo_actualizado: 'Módulo actualizado',
   reporte_registrado: 'Reporte registrado',
+  imagen_subida: 'Imagen subida',
+  imagen_eliminada: 'Imagen eliminada',
 };
 
 // Posibles incidentes: se resaltan en la tabla.

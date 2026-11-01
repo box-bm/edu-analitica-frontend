@@ -231,6 +231,7 @@ export default function Grupos() {
                 <th>Actividad</th>
                 <th>Módulo</th>
                 <th>Aciertos</th>
+                <th>Puntos</th>
                 <th>Fecha</th>
               </tr>
             </thead>
@@ -248,6 +249,7 @@ export default function Grupos() {
                       {r.puntaje}/{r.puntajeTotal}
                     </span>
                   </td>
+                  <td>{r.puntosObtenidos != null ? `${r.puntosObtenidos} / ${r.puntosPosibles}` : '—'}</td>
                   <td className="texto-suave">{fecha.format(new Date(r.completadoEn))}</td>
                 </tr>
               ))}
