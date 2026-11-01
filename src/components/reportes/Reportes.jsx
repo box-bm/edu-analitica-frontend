@@ -4,6 +4,7 @@ import useCarga from '../../hooks/useCarga';
 import seccionesService from '../../services/seccionesService';
 import { permisosReportes } from '../../utils/permisos';
 import ReporteActividades from './ReporteActividades';
+import ReportePuntos from './ReportePuntos';
 import ReportesSeccion from './seccion/ReportesSeccion';
 import './seccion/reportes-seccion.css';
 
@@ -12,12 +13,14 @@ const cargarFiltros = () => seccionesService.listarGradosConSecciones();
 const VISTAS = [
   { id: 'seccion', label: 'Por sección y módulo' },
   { id: 'actividad', label: 'Aciertos por actividad' },
+  { id: 'puntos', label: 'Puntos por grupo' },
 ];
 
 // Pestaña Reportes de admin y docente. "Por sección" es el flujo del Módulo 4
 // (vista previa, CSV para Colab, PDFs registrados) y solo aparece si el rol
 // tiene permiso (src/utils/permisos.js). "Por actividad" es el reporte
-// general; el backend lo limita a los grupos del docente.
+// general; el backend lo limita a los grupos del docente. "Puntos por grupo"
+// resume los puntos complementarios de las actividades (mismo alcance).
 export default function Reportes() {
   const { user } = useAuth();
   const { ver } = permisosReportes(user?.rol);
@@ -38,7 +41,13 @@ export default function Reportes() {
           </button>
         ))}
       </div>
-      {vista === 'seccion' ? <ReportesSeccion /> : porActividad}
+      {vista === 'seccion' ? (
+        <ReportesSeccion />
+      ) : vista === 'puntos' ? (
+        <ReportePuntos grados={filtros?.grados ?? []} ciclos={filtros?.ciclos ?? []} />
+      ) : (
+        porActividad
+      )}
     </div>
   );
 }

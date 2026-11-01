@@ -22,3 +22,110 @@
   font-family: var(--font-body);
   font-weight: 700;
 }
+
+/* --- Puntos por grupo ------------------------------------------------- */
+
+.filtros-puntos {
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filtros-puntos + * ,
+.panel + .kpi-grid {
+  margin-top: 1.5rem;
+}
+
+.kpi-grid + .puntos-grupo {
+  margin-top: 1.5rem;
+}
+
+.puntos-grupo-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.puntos-grupo-cabecera dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 0;
+}
+
+.puntos-grupo-cabecera dt {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.puntos-grupo-cabecera dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.puntos-total {
+  padding: 0.35rem 1rem;
+  border-radius: 999px;
+  background: var(--sun-soft);
+  border: 2px solid var(--sun);
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.puntos-total small {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.puntos-modulos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.9rem;
+}
+
+.puntos-modulo {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--line);
+  background: var(--paper);
+}
+
+.puntos-modulo p {
+  margin: 0.35rem 0;
+}
+
+.puntos-modulo-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.puntos-modulo-titulo img {
+  width: 64px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.puntos-modulo-titulo span {
+  font-size: 1.6rem;
+}
+
+.puntos-modulo-titulo h4 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+/* .progreso es un <span>: aquí va como barra a todo el ancho. */
+.puntos-modulo .progreso {
+  display: block;
+  margin: 0.4rem 0;
+}

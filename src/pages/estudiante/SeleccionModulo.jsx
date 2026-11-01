@@ -3,6 +3,11 @@ import { Link, useParams } from 'react-router-dom';
 import grupoService from '../../services/grupoService';
 import Estrellas from '../../components/Estrellas';
 import { colorModulo, estrellas } from '../../utils/estrellas';
+import { urlImagen } from '../../utils/imagenes';
+
+// Estrellas de una actividad hecha: por sus mejores puntos (sobre 100) o, con
+// un backend anterior a los puntos, por sus aciertos.
+const estrellasDe = (a) => (a.mejorPuntos != null ? estrellas(a.mejorPuntos, a.puntosPosibles ?? 100) : estrellas(a.mejorPuntaje, a.puntajeTotal));
 
 export default function SeleccionModulo() {
   const { idModulo } = useParams();
@@ -66,7 +71,7 @@ export default function SeleccionModulo() {
         </Link>
         <div className={`modulo-cabecera color-${color}`}>
           <span className="modulo-icono-grande" aria-hidden="true">
-            {modulo.icono ?? '📘'}
+            {modulo.imagen ? <img src={urlImagen(modulo.imagen)} alt="" /> : (modulo.icono ?? '📘')}
           </span>
           <div>
             <h1>{modulo.nombreModulo}</h1>
@@ -93,7 +98,7 @@ export default function SeleccionModulo() {
                   {a.descripcion && <small>{a.descripcion}</small>}
                 </span>
                 {a.completada ? (
-                  <Estrellas cantidad={estrellas(a.mejorPuntaje, a.puntajeTotal)} />
+                  <Estrellas cantidad={estrellasDe(a)} />
                 ) : (
                   <span className="actividad-jugar">¡Jugar! ▶</span>
                 )}
@@ -135,9 +140,15 @@ export default function SeleccionModulo() {
         <div className="modulos-grid">
           {modulos.map((m, i) => (
             <Link key={m.id} to={`/grupo/modulos/${m.id}`} className={`modulo-card color-${colorModulo(i)}`}>
-              <span className="modulo-icono" aria-hidden="true">
-                {m.icono ?? '📘'}
-              </span>
+              {m.imagen ? (
+                <span className="modulo-ilustracion" aria-hidden="true">
+                  <img src={urlImagen(m.imagen)} alt="" />
+                </span>
+              ) : (
+                <span className="modulo-icono" aria-hidden="true">
+                  {m.icono ?? '📘'}
+                </span>
+              )}
               <h2>{m.nombreModulo}</h2>
               {m.descripcion && <p>{m.descripcion}</p>}
               <span className="modulo-progreso" aria-label={`${m.porcentajeCompletado}% completado`}>

@@ -131,7 +131,7 @@ describe('Módulo 3 — grupos y actividades de los niños', () => {
             });
             cy.location('pathname').should('match', /\/grupo\/resultado$/);
             cy.get('.resultado-puntaje').should('contain', `Acertaron ${total} de ${total}`);
-            cy.get('.resultado-card [role=img]').should('have.attr', 'aria-label', '3 de 3 estrellas');
+            cy.get('.resultado-card [role=img]').should('have.attr', 'aria-label', '5 de 5 estrellas');
 
             // El resultado queda a nombre de ESTE grupo.
             cy.api(ctx.tokenDocente, 'GET', `/api/docentes/me/resultados?idGrupo=${grupo.id}`).then(({ body }) => {
@@ -140,7 +140,7 @@ describe('Módulo 3 — grupos y actividades de los niños', () => {
             });
 
             // M3-09: el avance refleja la actividad hecha, para el grupo y para el docente.
-            cy.contains('a', 'Más actividades').click();
+            cy.contains('a', 'Volver a actividades').click();
             cy.contains('.actividad-tile.hecha', actividad.titulo);
             cy.contains('a', '← Módulos').click();
             cy.get('.grupo-avance-numero').should('contain', '1');

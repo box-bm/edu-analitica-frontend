@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import grupoService from '../../services/grupoService';
-
-const LETRAS = ['A', 'B', 'C', 'D'];
+import RenderizadorPregunta from '../../components/preguntas/RenderizadorPregunta';
+import { TIPOS, estaRespondida, tipoDe } from '../../components/preguntas/tipos';
 
 export default function Actividad() {
   const { idActividad } = useParams();
@@ -50,10 +50,11 @@ export default function Actividad() {
 
   const preguntas = actividad.preguntas;
   const pregunta = preguntas[paso];
-  const elegida = respuestas[pregunta.id];
+  const respondida = (p) => estaRespondida(p, respuestas[p.id]);
+  const lista = respondida(pregunta);
   const esUltima = paso === preguntas.length - 1;
 
-  const elegir = (opcion) => setRespuestas((r) => ({ ...r, [pregunta.id]: opcion }));
+  const responder = (valor) => setRespuestas((r) => ({ ...r, [pregunta.id]: valor }));
 
   const terminar = async () => {
     setEnviando(true);
@@ -83,31 +84,25 @@ export default function Actividad() {
           {preguntas.map((p, i) => (
             <li
               key={p.id}
-              className={`${i === paso ? 'actual' : ''} ${respuestas[p.id] ? 'respondida' : ''}`}
+              className={`${i === paso ? 'actual' : ''} ${respondida(p) ? 'respondida' : ''}`}
             />
           ))}
         </ol>
       </div>
 
-      <section className="pregunta-card" key={pregunta.id}>
+      <section className={`pregunta-card pregunta-${tipoDe(pregunta).toLowerCase()}`} key={pregunta.id}>
         <span className="pregunta-contador">
           Pregunta {paso + 1} de {preguntas.length}
         </span>
         <h1 className="pregunta-enunciado">{pregunta.enunciado}</h1>
+        {tipoDe(pregunta) !== 'MULTIPLE_CHOICE' && (
+          <p className="pregunta-instruccion">
+            <span aria-hidden="true">{TIPOS[tipoDe(pregunta)].icono}</span>
+            {TIPOS[tipoDe(pregunta)].instruccion}
+          </p>
+        )}
 
-        <div className={`opciones opciones-${pregunta.opciones.length}`}>
-          {pregunta.opciones.map((opcion, i) => (
-            <button
-              key={opcion}
-              className={`opcion opcion-${i} ${elegida === opcion ? 'elegida' : ''}`}
-              onClick={() => elegir(opcion)}
-              aria-pressed={elegida === opcion}
-            >
-              <span className="opcion-letra">{LETRAS[i]}</span>
-              <span className="opcion-texto">{opcion}</span>
-            </button>
-          ))}
-        </div>
+        <RenderizadorPregunta pregunta={pregunta} respuesta={respuestas[pregunta.id]} onResponder={responder} />
       </section>
 
       <div className="actividad-navegacion">
@@ -122,7 +117,7 @@ export default function Actividad() {
           <button
             className="boton-grande boton-naranja"
             onClick={terminar}
-            disabled={!elegida || enviando || preguntas.some((p) => !respuestas[p.id])}
+            disabled={!lista || enviando || preguntas.some((p) => !respondida(p))}
           >
             {enviando ? 'Guardando…' : '¡Terminamos! 🎉'}
           </button>
@@ -130,7 +125,7 @@ export default function Actividad() {
           <button
             className="boton-grande boton-teal"
             onClick={() => setPaso((p) => p + 1)}
-            disabled={!elegida}
+            disabled={!lista}
           >
             Siguiente →
           </button>

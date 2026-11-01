@@ -89,6 +89,7 @@ export default function ReporteActividades({ grados = [], ciclos = [] }) {
                 <th>Intentos</th>
                 <th>Grupos</th>
                 <th>Aciertos</th>
+                <th>Puntos prom.</th>
               </tr>
             </thead>
             <tbody>
@@ -107,6 +108,7 @@ export default function ReporteActividades({ grados = [], ciclos = [] }) {
                       <b>{a.porcentajeAciertos}%</b>
                     </span>
                   </td>
+                  <td>{a.promedioPuntos != null ? `${a.promedioPuntos} / 100` : '—'}</td>
                 </tr>
               ))}
             </tbody>
